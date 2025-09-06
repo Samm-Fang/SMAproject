@@ -2,85 +2,90 @@
 import { loadState } from './storage.js';
 
 const initialState = {
-    settings: {
-        defaultApiUrl: 'https://api.openai.com/v1/chat/completions',
-        defaultApiKey: '',
-        defaultModelId: 'gpt-3.5-turbo'
-    },
-    agents: [
-        {
-            id: 1,
-            name: '默认助手',
-            description: '一个通用的AI助手',
-            prompt: 'You are a helpful assistant.',
-            apiUrl: '', // 为空则使用默认值
-            apiKey: '', // 为空则使用默认值
-            modelId: '' // 为空则使用默认值
-        }
-    ],
-    // messages 的 key 现在是 agent.id
-    messages: {
-        1: [{ author: 'Samm', text: '你好' }]
-    },
-    // currentThreadId 替换为 currentAgentId
-    currentAgentId: 1,
+    modelServices: [{ id: 1, name: 'OpenAI (Default)', apiUrl: 'https://api.openai.com/v1/chat/completions', apiKey: '', modelId: 'gpt-3.5-turbo' }],
+    agents: [{ id: 1, name: '通用助手', prompt: 'You are a helpful assistant.', modelServiceId: 1 }],
+    groups: [{ id: 1, name: '默认群组', agentIds: [1] }],
+    topics: [{ id: 1, name: '初始对话', groupId: 1 }],
+    messages: { 1: [{ id: 1, author: 'Samm', text: '你好' }] },
+    currentTopicId: 1,
     currentUser: { name: 'Samm' }
 };
 
-export let state = loadState() || initialState;
+const loadedState = loadState();
+export let state = loadedState ? { ...initialState, ...loadedState } : initialState;
 
-// 因为 state 不再是 const，我们可以提供一个重置函数
+// --- 状态修改函数 ---
+
 export function resetState() {
     state = initialState;
 }
 
-export function setCurrentAgent(agentId) {
-    state.currentAgentId = agentId;
+export function setCurrentTopic(topicId) {
+    state.currentTopicId = topicId;
 }
 
-// ... 其他修改状态的函数
+// -- Model Service Management --
+export function addModelService(serviceData) {
+    const newService = { id: Date.now(), ...serviceData };
+    state.modelServices.push(newService);
+}
+export function updateModelService(serviceId, serviceData) {
+    const service = state.modelServices.find(s => s.id === serviceId);
+    if (service) Object.assign(service, serviceData);
+}
+export function deleteModelService(serviceId) {
+    state.modelServices = state.modelServices.filter(s => s.id !== serviceId);
+    // TODO: 处理依赖该服务的智能体
+}
 
-/**
- * 向状态中添加一个新的智能体
- * @param {object} agentData - { name, description, prompt }
- */
+// -- Agent Management --
 export function addAgent(agentData) {
-    const newAgent = {
-        id: Date.now(), // 使用时间戳作为临时唯一ID
-        ...agentData
-    };
+    const newAgent = { id: Date.now(), ...agentData };
     state.agents.push(newAgent);
 }
-
-/**
- * 设置当前选中的话题
- * @param {number} topicId
- */
-export function setCurrentThread(topicId) {
-    state.currentThreadId = topicId;
+export function updateAgent(agentId, agentData) {
+    const agent = state.agents.find(a => a.id === agentId);
+    if (agent) Object.assign(agent, agentData);
+}
+export function deleteAgent(agentId) {
+    state.agents = state.agents.filter(a => a.id !== agentId);
+    // TODO: 处理依赖该智能体的群组
 }
 
-/**
- * 添加一个新话题
- * @param {string} topicName
- */
-export function addTopic(topicName) {
-    const newTopic = {
-        id: Date.now(),
-        name: topicName,
-        unread: 0
-    };
+// -- Group Management --
+export function addGroup(groupData) {
+    const newGroup = { id: Date.now(), ...groupData };
+    state.groups.push(newGroup);
+}
+export function updateGroup(groupId, groupData) {
+    const group = state.groups.find(g => g.id === groupId);
+    if (group) Object.assign(group, groupData);
+}
+export function deleteGroup(groupId) {
+    state.groups = state.groups.filter(g => g.id !== groupId);
+    // TODO: 处理依赖该群组的话题
+}
+
+// -- Topic Management --
+export function addTopic(topicData) {
+    const newTopic = { id: Date.now(), ...topicData };
     state.topics.push(newTopic);
-    // 同时为新话题创建空的聊天记录
-    state.messages[newTopic.id] = [];
+    if (!state.messages[newTopic.id]) {
+        state.messages[newTopic.id] = [];
+    }
+}
+export function deleteTopic(topicId) {
+    state.topics = state.topics.filter(t => t.id !== topicId);
+    delete state.messages[topicId];
 }
 
-/**
- * 向当前话题添加一条新消息
- * @param {object} messageData - { author, text }
- */
+// -- Message Management --
 export function addMessage(messageData) {
-    if (state.messages[state.currentThreadId]) {
-        state.messages[state.currentThreadId].push(messageData);
+    const topicId = state.currentTopicId;
+    if (!state.messages[topicId]) {
+        state.messages[topicId] = [];
     }
+    const newMessage = { id: Date.now(), ...messageData };
+    state.messages[topicId].push(newMessage);
+    return newMessage;
 }

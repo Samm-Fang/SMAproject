@@ -9,45 +9,52 @@
 <body>
     <div id="app">
         <aside class="sidebar">
-            <div class="sidebar-icon" title="聊天">💬</div>
-            <div class="sidebar-icon" title="智能体">🤖</div>
-            <div class="sidebar-icon" title="设置">⚙️</div>
+            <div class="sidebar-icon" data-panel="topics-panel" title="话题">💬</div>
+            <div class="sidebar-icon" data-panel="groups-panel" title="群组">👥</div>
+            <div class="sidebar-icon" data-panel="agents-panel" title="智能体">🤖</div>
+            <div class="sidebar-icon" data-panel="services-panel" title="设置">⚙️</div>
         </aside>
+
         <section class="panel">
-            <div id="agents-panel">
+            <!-- 话题面板 -->
+            <div id="topics-panel" class="panel-view">
+                <div class="panel-header">
+                    <h2>话题</h2>
+                    <button id="add-topic-btn" class="add-btn">+</button>
+                </div>
+                <ul class="topic-list list-container"></ul>
+            </div>
+
+            <!-- 群组面板 -->
+            <div id="groups-panel" class="panel-view hidden">
+                <div class="panel-header">
+                    <h2>群组</h2>
+                    <button id="add-group-btn" class="add-btn">+</button>
+                </div>
+                <ul class="group-list list-container"></ul>
+            </div>
+
+            <!-- 智能体面板 -->
+            <div id="agents-panel" class="panel-view hidden">
                  <div class="panel-header">
                     <h2>智能体</h2>
                     <button id="add-agent-btn" class="add-btn">+</button>
                 </div>
-                <ul class="agent-list">
-                    <!-- 智能体列表项将在这里 -->
-                </ul>
+                <ul class="agent-list list-container"></ul>
             </div>
-            <div id="settings-panel" class="hidden">
+
+            <!-- 模型服务面板 (设置) -->
+            <div id="services-panel" class="panel-view hidden">
                 <div class="panel-header">
-                   <h2>设置</h2>
+                   <h2>模型服务</h2>
+                   <button id="add-service-btn" class="add-btn">+</button>
                </div>
-               <div class="settings-content">
-                    <div class="form-group">
-                        <label for="default-api-url">默认 API URL</label>
-                        <input type="text" id="default-api-url">
-                    </div>
-                    <div class="form-group">
-                        <label for="default-api-key">默认 API Key</label>
-                        <input type="password" id="default-api-key">
-                    </div>
-                    <div class="form-group">
-                        <label for="default-model-id">默认模型 ID</label>
-                        <input type="text" id="default-model-id">
-                    </div>
-                    <button id="save-settings-btn" class="btn-save">保存设置</button>
-               </div>
+               <ul class="service-list list-container"></ul>
            </div>
         </section>
+
         <main class="chat-area">
-            <div class="chat-messages">
-                <!-- 聊天消息将在这里 -->
-            </div>
+            <div class="chat-messages"></div>
             <div class="chat-input-area">
                 <textarea placeholder="输入消息..."></textarea>
                 <button class="send-btn">发送</button>
@@ -55,42 +62,96 @@
         </main>
     </div>
 
-    <!-- 添加/编辑智能体模态框 -->
-    <div id="agent-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <h2>创建新智能体</h2>
-            <form id="agent-form">
-                <div class="form-group">
-                    <label for="agent-name">名称</label>
-                    <input type="text" id="agent-name" required>
-                </div>
-                <div class="form-group">
-                    <label for="agent-description">描述</label>
-                    <input type="text" id="agent-description" required>
-                </div>
-                 <div class="form-group">
-                    <label for="agent-prompt">提示词 (Prompt)</label>
-                    <textarea id="agent-prompt" rows="5" required></textarea>
-                </div>
-                <hr>
-                <p class="form-hint">为该智能体指定独立的API配置（留空则使用全局默认设置）</p>
-                 <div class="form-group">
-                    <label for="agent-api-url">API URL</label>
-                    <input type="text" id="agent-api-url">
-                </div>
-                 <div class="form-group">
-                    <label for="agent-api-key">API Key</label>
-                    <input type="password" id="agent-api-key">
-                </div>
-                 <div class="form-group">
-                    <label for="agent-model-id">模型 ID</label>
-                    <input type="text" id="agent-model-id">
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn-cancel">取消</button>
-                    <button type="submit" class="btn-save">保存</button>
-                </div>
-            </form>
+    <!-- 所有模态框 -->
+    <div id="modals">
+        <!-- 模型服务模态框 -->
+        <div id="service-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <form id="service-form">
+                    <h2>模型服务配置</h2>
+                    <div class="form-group">
+                        <label>名称</label> <input type="text" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>API URL</label> <input type="text" name="apiUrl" required>
+                    </div>
+                    <div class="form-group">
+                        <label>API Key</label> <input type="password" name="apiKey" required>
+                    </div>
+                    <div class="form-group">
+                        <label>模型 ID</label> <input type="text" name="modelId" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel">取消</button>
+                        <button type="submit" class="btn-save">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 智能体模态框 -->
+        <div id="agent-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <form id="agent-form">
+                    <h2>智能体配置</h2>
+                    <div class="form-group">
+                        <label>名称</label> <input type="text" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>系统提示词 (Prompt)</label> <textarea name="prompt" rows="5" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>绑定的模型服务</label>
+                        <select name="modelServiceId" required></select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel">取消</button>
+                        <button type="submit" class="btn-save">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 群组模态框 -->
+        <div id="group-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <form id="group-form">
+                    <h2>群组配置</h2>
+                    <div class="form-group">
+                        <label>群组名称</label> <input type="text" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>选择群组成员</label>
+                        <div class="multi-select-container" data-name="agentIds">
+                            <!-- 智能体多选列表将在这里动态生成 -->
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel">取消</button>
+                        <button type="submit" class="btn-save">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 话题模态框 -->
+        <div id="topic-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <form id="topic-form">
+                    <h2>话题配置</h2>
+                    <div class="form-group">
+                        <label>话题名称</label> <input type="text" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>选择所属群组</label>
+                        <select name="groupId" required></select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel">取消</button>
+                        <button type="submit" class="btn-save">保存</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 

@@ -1,57 +1,100 @@
-// AI 智能体群聊应用的主脚本文件
-import { initUI, showAgentsPanel, showSettingsPanel, openAgentModal, closeAgentModal, renderAgents, renderMessages } from './ui.js';
-import { state, addAgent, setCurrentAgent, addMessage } from './state.js';
+import * as ui from './ui.js';
+import * as state from './state.js';
 import { saveState } from './storage.js';
 import { getAiResponse } from './api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('应用已加载，主脚本开始执行。');
-    initUI();
-    
-    // --- 视图切换事件 ---
-    document.querySelector('.sidebar-icon[title="智能体"]').addEventListener('click', showAgentsPanel);
-    document.querySelector('.sidebar-icon[title="设置"]').addEventListener('click', showSettingsPanel);
+    ui.initUI();
 
-    // --- 智能体切换事件 ---
-    document.querySelector('.agent-list').addEventListener('click', (e) => {
-        const agentItem = e.target.closest('.agent-item');
-        if (agentItem) {
-            const agentId = Number(agentItem.dataset.id);
-            setCurrentAgent(agentId);
-            renderAgents();
-            renderMessages();
-            saveState(state);
+    // --- 视图/面板切换 ---
+    document.querySelector('.sidebar').addEventListener('click', (e) => {
+        const icon = e.target.closest('.sidebar-icon');
+        if (icon) {
+            ui.showPanel(icon.dataset.panel);
         }
     });
 
-    // --- 设置保存事件 ---
-    document.getElementById('save-settings-btn').addEventListener('click', () => {
-        state.settings.defaultApiUrl = document.getElementById('default-api-url').value;
-        state.settings.defaultApiKey = document.getElementById('default-api-key').value;
-        state.settings.defaultModelId = document.getElementById('default-model-id').value;
-        saveState(state);
-        alert('设置已保存！');
-        showAgentsPanel(); // 保存后切回智能体列表
+    // --- 通用列表项点击事件 (用于编辑) ---
+    document.querySelector('.panel').addEventListener('click', (e) => {
+        const item = e.target.closest('.list-item');
+        if (!item || e.target.closest('.delete-btn')) return; // 忽略删除按钮的点击
+
+        const id = Number(item.dataset.id);
+        if (item.classList.contains('topic-item')) {
+            state.setCurrentTopic(id);
+            ui.renderTopics();
+            ui.renderMessages();
+            saveState(state.state);
+        } else if (item.classList.contains('group-item')) {
+            ui.openGroupModal(state.state.groups.find(e => e.id === id));
+        } else if (item.classList.contains('agent-item')) {
+            ui.openAgentModal(state.state.agents.find(e => e.id === id));
+        } else if (item.classList.contains('service-item')) {
+            ui.openServiceModelModal(state.state.modelServices.find(e => e.id === id));
+        }
+    });
+    
+    // --- 通用删除按钮事件 ---
+    document.querySelector('.panel').addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('.delete-btn');
+        if (!deleteBtn) return;
+        
+        const id = Number(deleteBtn.dataset.id);
+        const item = deleteBtn.closest('.list-item');
+
+        if (!confirm('确定要删除吗？')) return;
+
+        if (item.classList.contains('topic-item')) state.deleteTopic(id);
+        else if (item.classList.contains('group-item')) state.deleteGroup(id);
+        else if (item.classList.contains('agent-item')) state.deleteAgent(id);
+        else if (item.classList.contains('service-item')) state.deleteModelService(id);
+        
+        ui.renderAll();
+        saveState(state.state);
     });
 
-    // --- 智能体模态框事件 ---
-    document.getElementById('add-agent-btn').addEventListener('click', openAgentModal);
-    document.querySelector('#agent-modal .btn-cancel').addEventListener('click', closeAgentModal);
-    
-    document.getElementById('agent-form').addEventListener('submit', (e) => {
+    // --- “添加”按钮事件 ---
+    document.getElementById('add-topic-btn').addEventListener('click', () => ui.openTopicModal());
+    document.getElementById('add-group-btn').addEventListener('click', () => ui.openGroupModal());
+    document.getElementById('add-agent-btn').addEventListener('click', () => ui.openAgentModal());
+    document.getElementById('add-service-btn').addEventListener('click', () => ui.openServiceModelModal());
+
+    // --- 模态框关闭事件 ---
+    document.getElementById('modals').addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-cancel') || e.target.classList.contains('modal-overlay')) {
+            const modal = e.target.closest('.modal-overlay');
+            if(modal) modal.classList.add('hidden');
+        }
+    });
+
+    // --- 表单提交事件 ---
+    // (由于表单太多，我们将它们合并到一个事件监听器中)
+    document.getElementById('modals').addEventListener('submit', (e) => {
         e.preventDefault();
-        const name = document.getElementById('agent-name').value;
-        const description = document.getElementById('agent-description').value;
-        const prompt = document.getElementById('agent-prompt').value;
-        const apiUrl = document.getElementById('agent-api-url').value;
-        const apiKey = document.getElementById('agent-api-key').value;
-        const modelId = document.getElementById('agent-model-id').value;
-        
-        addAgent({ name, description, prompt, apiUrl, apiKey, modelId });
-        renderAgents();
-        saveState(state);
-        closeAgentModal();
-        e.target.reset();
+        const form = e.target;
+        const data = Object.fromEntries(new FormData(form));
+        const editingId = Number(form.dataset.editingId);
+
+        switch (form.id) {
+            case 'topic-form':
+                editingId ? state.updateTopic(editingId, data) : state.addTopic(data);
+                break;
+            case 'group-form':
+                data.agentIds = Array.from(form.querySelectorAll('input[type="checkbox"]:checked')).map(cb => Number(cb.value));
+                editingId ? state.updateGroup(editingId, data) : state.addGroup(data);
+                break;
+            case 'agent-form':
+                editingId ? state.updateAgent(editingId, data) : state.addAgent(data);
+                break;
+            case 'service-form':
+                editingId ? state.updateModelService(editingId, data) : state.addModelService(data);
+                break;
+        }
+
+        ui.renderAll();
+        saveState(state.state);
+        form.closest('.modal-overlay').classList.add('hidden');
     });
 
     // --- 发送消息事件 ---
@@ -62,66 +105,58 @@ document.addEventListener('DOMContentLoaded', () => {
         const text = messageInput.value.trim();
         if (!text) return;
 
-        // 1. 立即更新UI
-        addMessage({ author: state.currentUser.name, text });
-        renderMessages();
+        state.addMessage({ author: state.state.currentUser.name, text });
+        ui.renderMessages();
+        saveState(state.state);
         messageInput.value = '';
         messageInput.focus();
         
-        // --- 禁用输入 ---
         sendBtn.disabled = true;
         messageInput.disabled = true;
 
-        // 2. 准备 API 调用
-        const currentAgent = state.agents.find(a => a.id === state.currentAgentId);
-        if (!currentAgent) {
-            alert('错误：找不到当前智能体！');
+        const currentTopic = state.state.topics.find(t => t.id === state.state.currentTopicId);
+        if (!currentTopic) { alert('错误：找不到当前话题！'); return; }
+        
+        const currentGroup = state.state.groups.find(g => g.id === currentTopic.groupId);
+        if (!currentGroup || currentGroup.agentIds.length === 0) { alert('错误：话题所属的群组为空！'); return; }
+
+        const firstAgentId = currentGroup.agentIds[0];
+        const agent = state.state.agents.find(a => a.id === firstAgentId);
+        if (!agent) { alert('错误：找不到群组内的智能体！'); return; }
+
+        const modelService = state.state.modelServices.find(s => s.id === agent.modelServiceId);
+        if (!modelService || !modelService.apiKey) {
+            alert('请在“设置”中为此智能体关联的模型服务配置API Key！');
+            ui.showPanel('services');
             return;
         }
 
-        const apiConfig = {
-            url: currentAgent.apiUrl || state.settings.defaultApiUrl,
-            apiKey: currentAgent.apiKey || state.settings.defaultApiKey,
-            modelId: currentAgent.modelId || state.settings.defaultModelId
-        };
-
-        if (!apiConfig.apiKey) {
-            alert('请先在设置中配置API Key！');
-            showSettingsPanel();
-            return;
-        }
-
-        const history = state.messages[state.currentAgentId] || [];
-
-        // 3. 调用 API 并处理流式响应
-        let aiMessage = { author: currentAgent.name, text: '' };
-        let isFirstChunk = true;
+        const history = state.state.messages[state.state.currentTopicId] || [];
+        let aiMessage = null;
 
         await getAiResponse(
-            apiConfig,
-            currentAgent.prompt,
+            modelService,
+            agent.prompt,
             history,
-            (delta) => { // onStream
+            (delta) => {
                 if (delta.content) {
-                    if (isFirstChunk) {
-                        addMessage(aiMessage);
-                        isFirstChunk = false;
+                    if (aiMessage === null) {
+                        aiMessage = state.addMessage({ author: agent.name, text: delta.content });
+                    } else {
+                        aiMessage.text += delta.content;
                     }
-                    aiMessage.text += delta.content;
-                    renderMessages();
+                    ui.renderMessages();
                 }
             },
-            () => { // onComplete
-                saveState(state);
-                console.log('Stream complete.');
-            },
-            (error) => { // onError
-                aiMessage.text += `\n\n**错误:** ${error.message}`;
-                renderMessages();
-                saveState(state);
+            () => saveState(state.state),
+            (error) => {
+                const errorMsg = { author: 'Error', text: error.message };
+                if (aiMessage) aiMessage.text += `\n\n**错误:** ${error.message}`;
+                else state.addMessage(errorMsg);
+                ui.renderMessages();
+                saveState(state.state);
             }
         ).finally(() => {
-            // --- 恢复输入 ---
             sendBtn.disabled = false;
             messageInput.disabled = false;
             messageInput.focus();
