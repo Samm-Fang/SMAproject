@@ -14,24 +14,35 @@
             <div class="sidebar-icon" title="设置">⚙️</div>
         </aside>
         <section class="panel">
-            <div id="topics-panel">
-                <div class="panel-header">
-                    <h2>话题</h2>
-                    <button class="add-btn">+</button>
-                </div>
-                <ul class="topic-list">
-                    <!-- 话题列表项将在这里 -->
-                </ul>
-            </div>
-            <div id="agents-panel" class="hidden">
+            <div id="agents-panel">
                  <div class="panel-header">
                     <h2>智能体</h2>
-                    <button class="add-btn">+</button>
+                    <button id="add-agent-btn" class="add-btn">+</button>
                 </div>
                 <ul class="agent-list">
                     <!-- 智能体列表项将在这里 -->
                 </ul>
             </div>
+            <div id="settings-panel" class="hidden">
+                <div class="panel-header">
+                   <h2>设置</h2>
+               </div>
+               <div class="settings-content">
+                    <div class="form-group">
+                        <label for="default-api-url">默认 API URL</label>
+                        <input type="text" id="default-api-url">
+                    </div>
+                    <div class="form-group">
+                        <label for="default-api-key">默认 API Key</label>
+                        <input type="password" id="default-api-key">
+                    </div>
+                    <div class="form-group">
+                        <label for="default-model-id">默认模型 ID</label>
+                        <input type="text" id="default-model-id">
+                    </div>
+                    <button id="save-settings-btn" class="btn-save">保存设置</button>
+               </div>
+           </div>
         </section>
         <main class="chat-area">
             <div class="chat-messages">
@@ -60,6 +71,20 @@
                  <div class="form-group">
                     <label for="agent-prompt">提示词 (Prompt)</label>
                     <textarea id="agent-prompt" rows="5" required></textarea>
+                </div>
+                <hr>
+                <p class="form-hint">为该智能体指定独立的API配置（留空则使用全局默认设置）</p>
+                 <div class="form-group">
+                    <label for="agent-api-url">API URL</label>
+                    <input type="text" id="agent-api-url">
+                </div>
+                 <div class="form-group">
+                    <label for="agent-api-key">API Key</label>
+                    <input type="password" id="agent-api-key">
+                </div>
+                 <div class="form-group">
+                    <label for="agent-model-id">模型 ID</label>
+                    <input type="text" id="agent-model-id">
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn-cancel">取消</button>

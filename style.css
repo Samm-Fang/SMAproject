@@ -77,11 +77,16 @@ body, html {
 }
 
 /* Topic List */
-.topic-list {
-    list-style: none;
-    padding: 10px;
-    overflow-y: auto;
-    flex-grow: 1;
+/* Settings Panel */
+.settings-content {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#save-settings-btn {
+    margin-top: auto; /* 将按钮推到底部 */
 }
 
 /* Chat Area */
@@ -116,6 +121,13 @@ body, html {
     border-radius: 5px;
     cursor: pointer;
     font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.send-btn:disabled,
+.chat-input-area textarea:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 /* 通用样式 */
@@ -233,6 +245,49 @@ body, html {
 }
 
 .btn-save {
+    background-color: #0e639c;
+    color: white;
+}
+
+#agent-modal hr {
+    border: none;
+    border-top: 1px solid #444;
+    margin: 20px 0;
+}
+
+.form-hint {
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 15px;
+}
+
+/* Message Styles */
+.message {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.message .author {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #d0d0d0;
+}
+
+.message .text {
+    background-color: #2d2d2d;
+    padding: 12px;
+    border-radius: 8px;
+    max-width: 70%;
+    line-height: 1.5;
+}
+
+.user-message {
+    align-items: flex-end; /* 用户消息靠右对齐 */
+}
+
+.user-message .text {
     background-color: #0e639c;
     color: white;
 }
