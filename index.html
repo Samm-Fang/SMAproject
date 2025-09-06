@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 智能体群聊</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <aside class="sidebar">
+            <div class="sidebar-icon" title="聊天">💬</div>
+            <div class="sidebar-icon" title="智能体">🤖</div>
+            <div class="sidebar-icon" title="设置">⚙️</div>
+        </aside>
+        <section class="panel">
+            <div id="topics-panel">
+                <div class="panel-header">
+                    <h2>话题</h2>
+                    <button class="add-btn">+</button>
+                </div>
+                <ul class="topic-list">
+                    <!-- 话题列表项将在这里 -->
+                </ul>
+            </div>
+            <div id="agents-panel" class="hidden">
+                 <div class="panel-header">
+                    <h2>智能体</h2>
+                    <button class="add-btn">+</button>
+                </div>
+                <ul class="agent-list">
+                    <!-- 智能体列表项将在这里 -->
+                </ul>
+            </div>
+        </section>
+        <main class="chat-area">
+            <div class="chat-messages">
+                <!-- 聊天消息将在这里 -->
+            </div>
+            <div class="chat-input-area">
+                <textarea placeholder="输入消息..."></textarea>
+                <button class="send-btn">发送</button>
+            </div>
+        </main>
+    </div>
+
+    <!-- 添加/编辑智能体模态框 -->
+    <div id="agent-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>创建新智能体</h2>
+            <form id="agent-form">
+                <div class="form-group">
+                    <label for="agent-name">名称</label>
+                    <input type="text" id="agent-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="agent-description">描述</label>
+                    <input type="text" id="agent-description" required>
+                </div>
+                 <div class="form-group">
+                    <label for="agent-prompt">提示词 (Prompt)</label>
+                    <textarea id="agent-prompt" rows="5" required></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel">取消</button>
+                    <button type="submit" class="btn-save">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
