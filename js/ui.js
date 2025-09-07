@@ -113,7 +113,22 @@ export function renderTopics() {
 
 export function renderAgents() {
     agentList.innerHTML = '';
-    (state.agents || []).forEach(agent => { // 添加防御性检查
+
+    // 渲染发言统筹器
+    const orchestratorAgent = state.orchestratorAgent;
+    const orchestratorLi = document.createElement('li');
+    orchestratorLi.className = 'agent-item orchestrator-agent-item';
+    orchestratorLi.dataset.id = orchestratorAgent.id;
+    orchestratorLi.innerHTML = `
+        <div class="agent-name">${orchestratorAgent.name}</div>
+        <div class="actions">
+            <button class="edit-btn" title="编辑发言统筹器">⚙️</button>
+        </div>
+    `;
+    agentList.appendChild(orchestratorLi);
+
+    // 渲染普通智能体
+    (state.agents || []).forEach(agent => {
         const li = document.createElement('li');
         li.className = 'agent-item';
         li.dataset.id = agent.id;
@@ -301,17 +316,26 @@ export function openAgentModal(agent = null) {
         agentPromptInput.value = agent.prompt;
         populateServiceSelector(agent.modelServiceId);
 
+        // 获取 form-group 元素
+        const agentNameGroup = agentNameInput.closest('.form-group');
+        const agentDescriptionGroup = agentDescriptionInput.closest('.form-group');
+        const agentPromptGroup = agentPromptInput.closest('.form-group');
+
         // 如果是发言统筹器
         if (agent.id === -1) {
+            agentNameGroup.classList.add('hidden'); // 隐藏名称
+            agentDescriptionGroup.classList.add('hidden'); // 隐藏描述
+            agentPromptGroup.classList.add('hidden'); // 隐藏提示词
+            agentContextCountGroup.classList.add('hidden'); // 隐藏上下文消息段数
+            // 只保留模型服务选项，其他字段禁用或隐藏
             agentNameInput.disabled = true;
             agentDescriptionInput.disabled = true;
             agentPromptInput.disabled = true;
-            agentContextCountGroup.classList.remove('hidden');
-            agentContextCountInput.value = agent.contextMessageCount;
+            agentContextCountInput.disabled = true;
         } else {
-            agentNameInput.disabled = false;
-            agentDescriptionInput.disabled = false;
-            agentPromptInput.disabled = false;
+            agentNameGroup.classList.remove('hidden');
+            agentDescriptionGroup.classList.remove('hidden');
+            agentPromptGroup.classList.remove('hidden');
             agentContextCountGroup.classList.add('hidden'); // 普通智能体隐藏上下文设置
         }
 
@@ -319,9 +343,9 @@ export function openAgentModal(agent = null) {
         title.textContent = '创建新智能体';
         delete form.dataset.editingId;
         form.reset();
-        agentNameInput.disabled = false;
-        agentDescriptionInput.disabled = false;
-        agentPromptInput.disabled = false;
+        agentNameInput.closest('.form-group').classList.remove('hidden');
+        agentDescriptionInput.closest('.form-group').classList.remove('hidden');
+        agentPromptInput.closest('.form-group').classList.remove('hidden');
         agentContextCountGroup.classList.add('hidden'); // 新建智能体隐藏上下文设置
         populateServiceSelector(state.modelServices[0]?.id); // 默认选中第一个服务
     }

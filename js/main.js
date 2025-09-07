@@ -200,6 +200,7 @@ ${agentsInGroup.map(agent => `<${agent.name}>${agent.prompt}</${agent.name}>`).j
 
                 // 4. 根据发言统筹器的决定，路由消息给对应的智能体
                 const chosenAgentName = orchestratorResponse.trim();
+                console.log(`发言统筹器决定: ${chosenAgentName}`); // 添加日志输出
                 const chosenAgent = agentsInGroup.find(a => a.name === chosenAgentName);
 
                 if (chosenAgent && chosenAgent.id !== -1) { // 确保不是发言统筹器自己
@@ -227,12 +228,16 @@ ${agentsInGroup.map(agent => `<${agent.name}>${agent.prompt}</${agent.name}>`).j
             console.error('群聊工作流中断:', flowError);
             renderOrchestratorMessage(`群聊工作流中断: ${flowError.message}`);
         } finally {
-            state.orchestratorChainActive = false; // 链条结束
             saveState(state);
-            sendBtn.disabled = false;
-            messageInput.disabled = false;
-            messageInput.focus();
-            hideStopButton(); // 隐藏中止按钮
+            // 只有当不是因为用户点击“中止”按钮而结束时才恢复输入框状态
+            // 如果 state.currentAbortController 存在且其 signal.aborted 为 true，则表示是用户中止了
+            if (!state.currentAbortController || !state.currentAbortController.signal.aborted) {
+                sendBtn.disabled = false;
+                messageInput.disabled = false;
+                messageInput.focus();
+                hideStopButton(); // 隐藏中止按钮
+            }
+            state.orchestratorChainActive = false; // 链条结束
         }
     }
     
@@ -580,6 +585,8 @@ ${agentsInGroup.map(agent => `<${agent.name}>${agent.prompt}</${agent.name}>`).j
 
             } else if (state.chatMode === 'group') {
                 // 群聊模式下的逻辑 (由发言统筹器协调)
+                // 等待用户消息发送并渲染完毕后再启动工作流
+                // (用户消息的添加和渲染已经在函数开头完成)
                 await startGroupChatFlow(currentTopic, currentGroup, signal); // 传递 signal
 
             } else {
