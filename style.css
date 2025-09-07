@@ -52,7 +52,7 @@ body, html {
 
 /* 确保所有面板子元素都占据整个面板区域 */
 #groups-panel,
-#topics-panel,
+#topics-panel, /* 话题面板现在在群组面板内，不再是顶级面板 */
 #agents-panel,
 #model-services-panel {
     position: absolute;
@@ -60,6 +60,24 @@ body, html {
     left: 0;
     width: 100%;
     height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* 防止内容溢出 */
+}
+
+/* 群组面板内部布局 */
+#groups-panel {
+    display: flex;
+    flex-direction: column;
+}
+#groups-panel .group-list {
+    flex-shrink: 0; /* 列表不收缩 */
+    max-height: 50%; /* 限制群组列表高度 */
+    overflow-y: auto;
+    border-bottom: 1px solid #333; /* 分隔群组和话题 */
+}
+#topics-list-container {
+    flex-grow: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden; /* 防止内容溢出 */
@@ -75,6 +93,13 @@ body, html {
 }
 .panel-header h2 {
     font-size: 16px;
+}
+.panel-header h3 { /* 话题子标题 */
+    font-size: 14px;
+}
+.panel-header.sub-header {
+    border-bottom: none; /* 子头部不需要额外边框 */
+    padding-top: 10px; /* 调整内边距 */
 }
 
 .add-btn {

@@ -101,7 +101,11 @@ export function updateAgent(agentId, agentData) {
 
 export function deleteAgent(agentId) {
     state.agents = state.agents.filter(a => a.id !== agentId);
-    // TODO: 检查是否有群组关联到此智能体，并处理
+    // 从所有群组中移除被删除的智能体
+    state.groups.forEach(group => {
+        group.agentIds = group.agentIds.filter(id => id !== agentId);
+    });
+    // TODO: 如果群组的 agentIds 变为空，是否删除该群组？目前不删除。
 }
 
 // --- Groups CRUD ---
@@ -126,17 +130,25 @@ export function deleteGroup(groupId) {
 export function addTopic(topicData) {
     // 确保 topics 数组存在
     if (!state.topics) { state.topics = []; }
-    const newTopic = { id: Date.now(), ...topicData };
+    const newTopic = { id: Date.now(), name: topicData.name || '新话题', ...topicData }; // 如果没有提供名称，则默认为“新话题”
     state.topics.push(newTopic);
     // 为新话题创建空的聊天记录
     if (!state.messages[newTopic.id]) {
         state.messages[newTopic.id] = [];
     }
+    return newTopic; // 返回新创建的话题对象
 }
 
 export function updateTopic(topicId, topicData) {
     const topic = state.topics.find(t => t.id === topicId);
     if (topic) { Object.assign(topic, topicData); }
+}
+
+export function updateTopicName(topicId, newName) {
+    const topic = state.topics.find(t => t.id === topicId);
+    if (topic) {
+        topic.name = newName;
+    }
 }
 
 export function deleteTopic(topicId) {

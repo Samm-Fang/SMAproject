@@ -10,13 +10,12 @@
     <div id="app">
         <aside class="sidebar">
             <div class="sidebar-icon" title="群组">👥</div>
-            <div class="sidebar-icon" title="话题">💬</div>
             <div class="sidebar-icon" title="智能体">🤖</div>
             <div class="sidebar-icon" title="设置">⚙️</div>
         </aside>
         <section class="panel">
-            <!-- 群组管理面板 -->
-            <div id="groups-panel" class="hidden">
+            <!-- 群组管理面板 (现在包含话题列表) -->
+            <div id="groups-panel">
                  <div class="panel-header">
                     <h2>群组</h2>
                     <button id="add-group-btn" class="add-btn">+</button>
@@ -24,17 +23,17 @@
                 <ul class="group-list">
                     <!-- 群组列表项将在这里 -->
                 </ul>
-            </div>
 
-            <!-- 话题管理面板 -->
-            <div id="topics-panel" class="hidden">
-                 <div class="panel-header">
-                    <h2>话题</h2>
-                    <button id="add-topic-btn" class="add-btn">+</button>
+                <!-- 话题列表 (嵌套在群组面板内) -->
+                <div id="topics-list-container">
+                    <div class="panel-header sub-header">
+                        <h3>话题</h3>
+                        <button id="add-topic-btn" class="add-btn">+</button>
+                    </div>
+                    <ul class="topic-list">
+                        <!-- 话题列表项将在这里 -->
+                    </ul>
                 </div>
-                <ul class="topic-list">
-                    <!-- 话题列表项将在这里 -->
-                </ul>
             </div>
 
             <!-- 智能体管理面板 -->
@@ -48,7 +47,7 @@
                 </ul>
             </div>
 
-            <!-- 模型服务管理面板 (原设置面板) -->
+            <!-- 模型服务管理面板 -->
             <div id="model-services-panel" class="hidden">
                 <div class="panel-header">
                    <h2>模型服务</h2>
@@ -172,10 +171,6 @@
         <div class="modal-content">
             <h2>创建新话题</h2>
             <form id="topic-form">
-                <div class="form-group">
-                    <label for="topic-name">话题名称</label>
-                    <input type="text" id="topic-name" required>
-                </div>
                 <div class="form-group">
                     <label for="topic-group">所属群组</label>
                     <select id="topic-group-selector" title="选择所属群组" required>

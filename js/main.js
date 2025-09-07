@@ -1,8 +1,8 @@
 // AI 智能体群聊应用的主脚本文件
-import { state, addModelService, updateModelService, deleteModelService, addAgent, updateAgent, deleteAgent, addGroup, updateGroup, deleteGroup, addTopic, updateTopic, deleteTopic, setCurrentGroup, setCurrentTopic, addMessage } from './state.js';
+import { state, addModelService, updateModelService, deleteModelService, addAgent, updateAgent, deleteAgent, addGroup, updateGroup, deleteGroup, addTopic, updateTopic, deleteTopic, setCurrentGroup, setCurrentTopic, addMessage, updateTopicName } from './state.js';
 import { saveState } from './storage.js';
 import { getAiResponse } from './api.js';
-import { initUI, showGroupsPanel, showTopicsPanel, showAgentsPanel, showModelServicesPanel, renderGroups, renderTopics, renderAgents, renderModelServices, renderMessages, openGroupModal, closeGroupModal, openTopicModal, closeTopicModal, openAgentModal, closeAgentModal, openServiceModelModal, closeServiceModelModal } from './ui.js';
+import { initUI, showGroupsPanel, showAgentsPanel, showModelServicesPanel, renderGroups, renderTopics, renderAgents, renderModelServices, renderMessages, openGroupModal, closeGroupModal, openTopicModal, closeTopicModal, openAgentModal, closeAgentModal, openServiceModelModal, closeServiceModelModal, updateChatAreaVisibility } from './ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('应用已加载，主脚本开始执行。');
@@ -13,10 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showGroupsPanel();
         renderGroups();
     });
-    document.querySelector('.sidebar-icon[title="话题"]').addEventListener('click', () => {
-        showTopicsPanel();
-        renderTopics();
-    });
+    // 侧边栏不再有独立的话题入口，其事件监听器已移除
     document.querySelector('.sidebar-icon[title="智能体"]').addEventListener('click', () => {
         showAgentsPanel();
         renderAgents();
@@ -57,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderTopics(); // 刷新话题列表
             renderMessages(); // 刷新聊天记录
             saveState(state);
+            updateChatAreaVisibility();
         }
     });
 
@@ -81,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('#group-modal .btn-cancel').addEventListener('click', closeGroupModal);
 
     // --- 话题管理事件 ---
+    // 话题现在嵌套在群组面板内，不再有独立的侧边栏入口
     document.getElementById('add-topic-btn').addEventListener('click', () => openTopicModal());
     document.querySelector('.topic-list').addEventListener('click', (e) => {
         const topicItem = e.target.closest('.topic-item');
@@ -108,14 +107,15 @@ document.addEventListener('DOMContentLoaded', () => {
             renderTopics(); // 刷新话题列表的active状态
             renderMessages(); // 刷新聊天记录
             saveState(state);
+            updateChatAreaVisibility();
         }
     });
 
     document.getElementById('topic-form').addEventListener('submit', (e) => {
         e.preventDefault();
-        const name = document.getElementById('topic-name').value;
+        // const name = document.getElementById('topic-name').value; // 话题名称不再手动输入
         const groupId = Number(document.getElementById('topic-group-selector').value);
-        const topicData = { name, groupId };
+        const topicData = { name: '', groupId }; // 初始名称为空字符串
 
         const editingId = Number(e.target.dataset.editingId);
         if (editingId) {
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
             addTopic(topicData);
         }
         saveState(state);
-        renderTopics(); // <--- 确保这里被调用
+        renderTopics();
         closeTopicModal();
         e.target.reset();
     });
@@ -221,6 +221,12 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleSendMessage() {
         const text = messageInput.value.trim();
         if (!text) return;
+
+        // 检查是否是新话题的第一条消息，如果是则自动命名
+        if (state.currentTopicId && state.messages[state.currentTopicId]?.length === 0) {
+            updateTopicName(state.currentTopicId, text.substring(0, 20) + '...'); // 使用前20个字符作为名称
+            renderTopics(); // 更新话题列表显示
+        }
 
         // 1. 立即更新UI
         addMessage({ author: state.currentUser.name, text });

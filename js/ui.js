@@ -3,18 +3,19 @@ import { state } from './state.js';
 
 // --- DOM 元素引用 ---
 const groupsPanel = document.getElementById('groups-panel');
-const topicsPanel = document.getElementById('topics-panel');
 const agentsPanel = document.getElementById('agents-panel');
 const modelServicesPanel = document.getElementById('model-services-panel'); // 原 settingsPanel
 
+// 列表容器引用
 const groupList = document.querySelector('.group-list');
-const topicList = document.querySelector('.topic-list');
+const topicList = document.querySelector('.topic-list'); // 现在是 groups-panel 内部的 topic-list
 const agentList = document.querySelector('.agent-list');
 const serviceList = document.querySelector('.service-list');
 
 const chatMessages = document.querySelector('.chat-messages');
-const chatInputArea = document.querySelector('.chat-input-area'); // 聊天输入区域
+const chatInputArea = document.querySelector('.chat-input-area');
 
+// 模态框引用
 const agentModal = document.getElementById('agent-modal');
 const serviceModal = document.getElementById('service-modal');
 const groupModal = document.getElementById('group-modal');
@@ -35,34 +36,37 @@ export function initUI() {
 // --- 视图切换 ---
 export function showGroupsPanel() {
     groupsPanel.classList.remove('hidden');
-    topicsPanel.classList.add('hidden');
     agentsPanel.classList.add('hidden');
     modelServicesPanel.classList.add('hidden');
-    chatInputArea.classList.add('hidden'); // 群组管理时不显示聊天输入
+    // chatInputArea.classList.add('hidden'); // 不再在这里隐藏，由 showChatArea 控制
+    updateChatAreaVisibility(); // 根据当前话题状态更新聊天区域可见性
 }
 
-export function showTopicsPanel() {
-    groupsPanel.classList.add('hidden');
-    topicsPanel.classList.remove('hidden');
-    agentsPanel.classList.add('hidden');
-    modelServicesPanel.classList.add('hidden');
-    chatInputArea.classList.remove('hidden'); // 话题列表显示时显示聊天输入
-}
+// 话题面板现在是群组面板的一部分，所以不再有独立的 showTopicsPanel
+// 聊天界面显示时，聊天输入框显示
+// export function showTopicsPanel() { ... } // 移除旧的 showTopicsPanel
 
 export function showAgentsPanel() {
     groupsPanel.classList.add('hidden');
-    topicsPanel.classList.add('hidden');
     agentsPanel.classList.remove('hidden');
     modelServicesPanel.classList.add('hidden');
-    chatInputArea.classList.add('hidden'); // 智能体管理时不显示聊天输入
+    chatInputArea.classList.add('hidden'); // 智能体管理时隐藏聊天输入
 }
 
 export function showModelServicesPanel() {
     groupsPanel.classList.add('hidden');
-    topicsPanel.classList.add('hidden');
     agentsPanel.classList.add('hidden');
     modelServicesPanel.classList.remove('hidden');
-    chatInputArea.classList.add('hidden'); // 模型服务管理时不显示聊天输入
+    chatInputArea.classList.add('hidden'); // 模型服务管理时隐藏聊天输入
+}
+
+// 根据当前是否有选中话题来控制聊天区域的可见性
+export function updateChatAreaVisibility() {
+    if (state.currentTopicId) {
+        chatInputArea.classList.remove('hidden');
+    } else {
+        chatInputArea.classList.add('hidden');
+    }
 }
 
 
@@ -70,8 +74,7 @@ export function showModelServicesPanel() {
 
 export function renderGroups() {
     groupList.innerHTML = '';
-    // 添加防御性检查，确保 state.groups 存在且是数组
-    (state.groups || []).forEach(group => {
+    (state.groups || []).forEach(group => { // 添加防御性检查
         const li = document.createElement('li');
         li.className = 'group-item';
         li.dataset.id = group.id;
@@ -91,7 +94,6 @@ export function renderGroups() {
 
 export function renderTopics() {
     topicList.innerHTML = '';
-    // 仅渲染当前群组下的话题
     const currentGroupTopics = (state.topics || []).filter(t => t.groupId === state.currentGroupId);
     currentGroupTopics.forEach(topic => {
         const li = document.createElement('li');
@@ -101,7 +103,7 @@ export function renderTopics() {
             li.classList.add('active');
         }
         li.innerHTML = `
-            <div class="topic-name">${topic.name}</div>
+            <div class="topic-name">${topic.name || '新话题'}</div>
             <div class="actions">
                 <button class="edit-btn" title="编辑话题">✏️</button>
                 <button class="delete-btn" title="删除话题">🗑️</button>
@@ -113,11 +115,11 @@ export function renderTopics() {
 
 export function renderAgents() {
     agentList.innerHTML = '';
-    (state.agents || []).forEach(agent => {
+    (state.agents || []).forEach(agent => { // 添加防御性检查
         const li = document.createElement('li');
         li.className = 'agent-item';
         li.dataset.id = agent.id;
-        if (agent.id === state.currentAgentId) { // 智能体列表的 active 状态可能需要调整
+        if (agent.id === state.currentAgentId) {
             li.classList.add('active');
         }
         li.innerHTML = `
@@ -133,7 +135,7 @@ export function renderAgents() {
 
 export function renderModelServices() {
     serviceList.innerHTML = '';
-    (state.modelServices || []).forEach(service => {
+    (state.modelServices || []).forEach(service => { // 添加防御性检查
         const li = document.createElement('li');
         li.className = 'service-item';
         li.dataset.id = service.id;
@@ -174,7 +176,7 @@ export function renderMessages() {
 function populateAgentCheckboxes(selectedAgentIds = []) {
     const container = document.getElementById('group-agents-selector');
     container.innerHTML = '';
-    state.agents.forEach(agent => {
+    (state.agents || []).forEach(agent => { // 添加防御性检查
         const label = document.createElement('label');
         label.innerHTML = `
             <input type="checkbox" value="${agent.id}" ${selectedAgentIds.includes(agent.id) ? 'checked' : ''}>
@@ -188,7 +190,7 @@ function populateAgentCheckboxes(selectedAgentIds = []) {
 function populateGroupSelector(selectedGroupId = null) {
     const selector = document.getElementById('topic-group-selector');
     selector.innerHTML = '';
-    state.groups.forEach(group => {
+    (state.groups || []).forEach(group => { // 添加防御性检查
         const option = document.createElement('option');
         option.value = group.id;
         option.textContent = group.name;
@@ -203,7 +205,7 @@ function populateGroupSelector(selectedGroupId = null) {
 function populateServiceSelector(selectedServiceId = null) {
     const selector = document.getElementById('agent-model-service');
     selector.innerHTML = ''; // 清空旧选项
-    state.modelServices.forEach(service => {
+    (state.modelServices || []).forEach(service => { // 添加防御性检查
         const option = document.createElement('option');
         option.value = service.id;
         option.textContent = `${service.name} (${service.modelId})`;
@@ -240,10 +242,12 @@ export function closeGroupModal() {
 export function openTopicModal(topic = null) {
     const form = document.getElementById('topic-form');
     const title = topicModal.querySelector('h2');
+    // const topicNameInput = document.getElementById('topic-name'); // 话题名称输入框已移除
+
     if (topic) {
         title.textContent = '编辑话题';
         form.dataset.editingId = topic.id;
-        document.getElementById('topic-name').value = topic.name;
+        // topicNameInput.value = topic.name; // 话题名称不再手动编辑
         populateGroupSelector(topic.groupId);
     } else {
         title.textContent = '创建新话题';
