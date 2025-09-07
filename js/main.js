@@ -47,8 +47,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         await getAiResponse(
             apiConfig,
-            agent.prompt,
-            messagesToSend,
+            // 组合系统提示词
+            `${agent.prompt}
+
+额外提示：
+- 你处在一个群聊中，与多名不同风格的用户互动。
+- 你的发言符合聊天软件网络聊天的风格，保持简短，除非刻意长篇大论否则极少超过二十个汉字
+
+如下是之前发生的群聊内容
+现在轮到你发言，请你做出回复。
+`,
+            messagesToSend, // 历史消息数组保持不变
             (delta) => {
                 if (delta.content) {
                     if (aiMessage === null) {
@@ -126,23 +135,29 @@ ${agentsInGroup.map(agent => `<${agent.name}>${agent.prompt}</${agent.name}>`).j
     async function startGroupChatFlow(currentTopic, currentGroup, signal) {
         state.orchestratorChainActive = true; // 激活链条
         showStopButton(); // 显示中止按钮
+        console.log('startGroupChatFlow: 群聊工作流已启动。');
 
         try {
             let continueChat = true;
             while (continueChat && state.orchestratorChainActive) {
+                console.log('startGroupChatFlow: 循环开始，orchestratorChainActive:', state.orchestratorChainActive);
                 // 1. 获取群组中的智能体
                 const agentsInGroup = currentGroup.agentIds.map(agentId => state.agents.find(a => a.id === agentId)).filter(Boolean);
                 if (agentsInGroup.length === 0) {
                     renderOrchestratorMessage('错误：当前群组中没有智能体，群聊工作流中断。');
+                    console.error('startGroupChatFlow: 当前群组中没有智能体，群聊工作流中断。');
                     break;
                 }
+                console.log('startGroupChatFlow: 群组中的智能体:', agentsInGroup.map(a => a.name));
 
                 // 2. 准备发言统筹器的API配置和提示词
                 const orchestratorService = state.modelServices.find(s => s.id === state.orchestratorAgent.modelServiceId);
                 if (!orchestratorService) {
                     renderOrchestratorMessage('错误：找不到发言统筹器的模型服务，群聊工作流中断。');
+                    console.error('startGroupChatFlow: 找不到发言统筹器的模型服务，群聊工作流中断。');
                     break;
                 }
+                console.log('startGroupChatFlow: 发言统筹器使用的模型服务:', orchestratorService.name);
 
                 if (!orchestratorService.apiKey) {
                     alert(`请先在 "模型服务" 中为发言统筹器使用的服务 "${orchestratorService.name}" 配置API Key！`);
@@ -386,8 +401,13 @@ ${agentsInGroup.map(agent => `<${agent.name}>${agent.prompt}</${agent.name}>`).j
         const agentId = Number(agentItem.dataset.id);
         
         if (e.target.matches('.edit-btn')) {
-            const agent = state.agents.find(a => a.id === agentId);
-            openAgentModal(agent);
+            let agentToEdit;
+            if (agentId === state.orchestratorAgent.id) { // 如果点击的是发言统筹器
+                agentToEdit = state.orchestratorAgent;
+            } else { // 普通智能体
+                agentToEdit = state.agents.find(a => a.id === agentId);
+            }
+            openAgentModal(agentToEdit);
         } else if (e.target.matches('.delete-btn')) {
             if (confirm('确定要删除此智能体吗？')) {
                 deleteAgent(agentId);
@@ -472,6 +492,8 @@ ${agentsInGroup.map(agent => `<${agent.name}>${agent.prompt}</${agent.name}>`).j
         const text = messageInput.value.trim();
         if (!text) return;
 
+        console.log('handleSendMessage: 消息发送中...', { text, chatMode: state.chatMode, currentTopicId: state.currentTopicId });
+
         // 检查是否是新话题的第一条消息，如果是则自动命名
         if (state.currentTopicId && state.messages[state.currentTopicId]?.length === 0) {
             updateTopicName(state.currentTopicId, text.substring(0, 20) + '...'); // 使用前20个字符作为名称
@@ -519,6 +541,7 @@ ${agentsInGroup.map(agent => `<${agent.name}>${agent.prompt}</${agent.name}>`).j
 
         try {
             if (state.chatMode === 'private') {
+                console.log('handleSendMessage: 进入私聊模式。');
                 // 私聊模式下的逻辑 (与单个智能体对话)
                 const targetAgentId = currentGroup.agentIds[0]; // 假设私聊模式下群组只有一个智能体
                 const targetAgent = state.agents.find(a => a.id === targetAgentId);
@@ -584,12 +607,14 @@ ${agentsInGroup.map(agent => `<${agent.name}>${agent.prompt}</${agent.name}>`).j
                 );
 
             } else if (state.chatMode === 'group') {
+                console.log('handleSendMessage: 进入群聊模式，即将启动群聊工作流。');
                 // 群聊模式下的逻辑 (由发言统筹器协调)
                 // 等待用户消息发送并渲染完毕后再启动工作流
                 // (用户消息的添加和渲染已经在函数开头完成)
                 await startGroupChatFlow(currentTopic, currentGroup, signal); // 传递 signal
 
             } else {
+                console.warn('handleSendMessage: 未知聊天模式！', state.chatMode);
                 alert('未知聊天模式！');
             }
         } catch (error) {
