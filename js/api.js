@@ -8,8 +8,9 @@
  * @param {function} onStream - 处理数据流的回调函数
  * @param {function} onComplete - 完成时的回调
  * @param {function} onError - 错误处理回调
+ * @param {AbortSignal} [signal] - 用于中断请求的 AbortSignal
  */
-export async function getAiResponse(apiConfig, systemPrompt, history, onStream, onComplete, onError) {
+export async function getAiResponse(apiConfig, systemPrompt, history, onStream, onComplete, onError, signal) {
     try {
         const payload = {
             model: apiConfig.modelId,
@@ -32,6 +33,7 @@ export async function getAiResponse(apiConfig, systemPrompt, history, onStream, 
                 'Authorization': `Bearer ${apiConfig.apiKey}`
             },
             body: JSON.stringify(payload),
+            signal: signal // 添加 signal
         });
 
         if (!response.ok) {

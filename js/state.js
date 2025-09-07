@@ -15,12 +15,20 @@ const initialState = {
             contextMessageCount: 10 // 默认发送最近10条消息作为上下文
         }
     ],
+    // 发言统筹器智能体，永远存在且无法删除
+    orchestratorAgent: {
+        id: -1, // 特殊ID
+        name: '发言统筹器',
+        prompt: '你是一个专业的群聊发言统筹器，负责在群聊中决定下一个发言的智能体。你需要根据对话内容和每个智能体的特点，合理安排发言顺序。你的目标是让群聊流畅、高效、有深度。',
+        modelServiceId: 1, // 默认关联到 ID 为 1 的模型服务
+        contextMessageCount: 10 // 发言统筹器使用的上下文消息数量
+    },
     // 智能体 (身份定义)
     agents: [
-        { 
-            id: 1, 
-            name: '默认助手', 
-            prompt: 'You are a helpful assistant.',
+        {
+            id: 1,
+            name: '默认助手',
+            prompt: '你是一个乐于助人的助手。',
             modelServiceId: 1 // 关联到 ID 为 1 的模型服务
         }
     ],
@@ -47,7 +55,9 @@ const initialState = {
     // 当前选中状态
     currentGroupId: 1,
     currentTopicId: 1, // 默认选中默认话题
-    currentUser: { name: 'Samm' }
+    currentUser: { name: 'Samm' },
+    chatMode: 'group', // 'group' 或 'private'
+    orchestratorChainActive: false // 标记发言统筹器链条是否激活
 };
 
 // 确保加载的状态完整性
@@ -62,14 +72,23 @@ if (loadedState) {
     // 确保 currentGroupId 和 currentTopicId 存在，或回退到默认
     loadedState.currentGroupId = loadedState.currentGroupId || initialState.currentGroupId;
     loadedState.currentTopicId = loadedState.currentTopicId || initialState.currentTopicId;
+    // 确保发言统筹器存在，如果不存在则使用初始状态的发言统筹器
+    loadedState.orchestratorAgent = loadedState.orchestratorAgent || initialState.orchestratorAgent;
+    // 确保 chatMode 和 orchestratorChainActive 存在
+    loadedState.chatMode = loadedState.chatMode || initialState.chatMode;
+    loadedState.orchestratorChainActive = loadedState.orchestratorChainActive || initialState.orchestratorChainActive;
 }
 export let state = loadedState || initialState;
-
 
 // --- 状态修改函数 ---
 
 export function resetState() {
-    state = initialState;
+    state = JSON.parse(JSON.stringify(initialState)); // 深拷贝 initialState，避免引用问题
+}
+
+// --- 发言统筹器相关函数 ---
+export function updateOrchestratorAgent(agentData) {
+    Object.assign(state.orchestratorAgent, agentData);
 }
 
 // --- ModelServices CRUD ---
