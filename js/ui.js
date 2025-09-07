@@ -1,5 +1,5 @@
 // 负责所有与 DOM 操作和 UI 更新相关的逻辑
-import { state } from './state.js';
+import { state, resetTokens } from './state.js'; // 导入 resetTokens
 
 // --- DOM 元素引用 ---
 const groupsPanel = document.getElementById('groups-panel');
@@ -34,6 +34,22 @@ export function initUI() {
     renderAgents();
     renderModelServices();
     renderMessages(); // 渲染当前话题的消息
+    updateTokenStats(); // 初始化 token 统计显示
+}
+
+/**
+ * 更新页面上显示的 token 统计数据
+ */
+export function updateTokenStats() {
+    const inputTokensEl = document.getElementById('input-tokens');
+    const outputTokensEl = document.getElementById('output-tokens');
+
+    if (inputTokensEl) {
+        inputTokensEl.textContent = state.totalInputTokens.toFixed(2); // 显示两位小数
+    }
+    if (outputTokensEl) {
+        outputTokensEl.textContent = state.totalOutputTokens.toFixed(2); // 显示两位小数
+    }
 }
 
 // --- 视图切换 ---

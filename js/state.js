@@ -57,7 +57,9 @@ const initialState = {
     currentTopicId: 1, // 默认选中默认话题
     currentUser: { name: 'Samm' },
     chatMode: 'group', // 'group' 或 'private'
-    orchestratorChainActive: false // 标记发言统筹器链条是否激活
+    orchestratorChainActive: false, // 标记发言统筹器链条是否激活
+    totalInputTokens: 0, // 累计消耗的输入 tokens
+    totalOutputTokens: 0 // 累计消耗的输出 tokens
 };
 
 // 确保加载的状态完整性
@@ -77,8 +79,25 @@ if (loadedState) {
     // 确保 chatMode 和 orchestratorChainActive 存在
     loadedState.chatMode = loadedState.chatMode || initialState.chatMode;
     loadedState.orchestratorChainActive = loadedState.orchestratorChainActive || initialState.orchestratorChainActive;
+    loadedState.totalInputTokens = loadedState.totalInputTokens || initialState.totalInputTokens; // 确保 totalInputTokens 存在
+    loadedState.totalOutputTokens = loadedState.totalOutputTokens || initialState.totalOutputTokens; // 确保 totalOutputTokens 存在
 }
 export let state = loadedState || initialState;
+
+// 新增：重置 tokens 的函数
+export function resetTokens() {
+    state.totalInputTokens = 0;
+    state.totalOutputTokens = 0;
+}
+
+// 新增：更新 tokens 的函数
+export function addInputTokens(count) {
+    state.totalInputTokens += count;
+}
+
+export function addOutputTokens(count) {
+    state.totalOutputTokens += count;
+}
 
 // --- 状态修改函数 ---
 

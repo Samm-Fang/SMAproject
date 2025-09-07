@@ -1,8 +1,8 @@
 // AI 智能体群聊应用的主脚本文件
-import { state, addModelService, updateModelService, deleteModelService, addAgent, updateAgent, deleteAgent, addGroup, updateGroup, deleteGroup, addTopic, updateTopic, deleteTopic, setCurrentGroup, setCurrentTopic, addMessage, updateTopicName, updateOrchestratorAgent } from './state.js';
+import { state, addModelService, updateModelService, deleteModelService, addAgent, updateAgent, deleteAgent, addGroup, updateGroup, deleteGroup, addTopic, updateTopic, deleteTopic, setCurrentGroup, setCurrentTopic, addMessage, updateTopicName, updateOrchestratorAgent, addInputTokens, addOutputTokens } from './state.js';
 import { saveState } from './storage.js';
-import { getAiResponse } from './api.js';
-import { initUI, showGroupsPanel, showAgentsPanel, showModelServicesPanel, renderGroups, renderTopics, renderAgents, renderModelServices, renderMessages, openGroupModal, closeGroupModal, openTopicModal, closeTopicModal, openAgentModal, closeAgentModal, openServiceModelModal, closeServiceModelModal, updateChatAreaVisibility, renderOrchestratorMessage, showStopButton, hideStopButton } from './ui.js';
+import { getAiResponse, estimateTokens } from './api.js';
+import { initUI, showGroupsPanel, showAgentsPanel, showModelServicesPanel, renderGroups, renderTopics, renderAgents, renderModelServices, renderMessages, openGroupModal, closeGroupModal, openTopicModal, closeTopicModal, openAgentModal, closeAgentModal, openServiceModelModal, closeServiceModelModal, updateChatAreaVisibility, renderOrchestratorMessage, showStopButton, hideStopButton, updateTokenStats } from './ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('应用已加载，主脚本开始执行。');
@@ -45,10 +45,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let aiMessage = null;
         let fullResponse = '';
 
-        await getAiResponse(
-            apiConfig,
-            // 组合系统提示词
-            `${agent.prompt}
+        // 计算输入 tokens
+        const systemPromptContent = `${agent.prompt}
 
 额外提示：
 - 你处在一个群聊中，与多名不同风格的用户互动。
@@ -58,7 +56,17 @@ document.addEventListener('DOMContentLoaded', () => {
 ${messagesToSend.map(msg => `<${msg.author}>${msg.text}</${msg.author}>`).join('\n')}
 
 **现在轮到你发言，请你做出回复。**
-`,
+`;
+        addInputTokens(estimateTokens(systemPromptContent));
+        messagesToSend.forEach(msg => {
+            addInputTokens(estimateTokens(msg.text)); // 历史消息的文本也算输入
+        });
+        updateTokenStats(); // 更新 UI
+
+
+        await getAiResponse(
+            apiConfig,
+            systemPromptContent,
             [], // 历史消息数组现在通过 systemPrompt 传递格式化后的内容
             (delta) => {
                 if (delta.content) {
@@ -68,6 +76,8 @@ ${messagesToSend.map(msg => `<${msg.author}>${msg.text}</${msg.author}>`).join('
                         aiMessage.text += delta.content;
                     }
                     fullResponse += delta.content;
+                    addOutputTokens(estimateTokens(delta.content)); // 累加输出 tokens
+                    updateTokenStats(); // 更新 UI
                     renderMessages();
                 }
             },
@@ -178,33 +188,36 @@ ${agentsInGroup.map(agent => `<${agent.name}>${agent.prompt}</${agent.name}>`).j
 
                 const history = state.messages[state.currentTopicId] || [];
                 const orchestratorPrompt = generateOrchestratorPrompt(history, agentsInGroup);
+addInputTokens(estimateTokens(orchestratorPrompt)); // 累加发言统筹器输入 tokens
+updateTokenStats(); // 更新 UI
+console.log('发言统筹器提示词:', orchestratorPrompt);
 
-                console.log('发言统筹器提示词:', orchestratorPrompt);
-
-                // 3. 调用发言统筹器决定下一个发言者
-                let orchestratorResponse = '';
-                try {
-                    await getAiResponse(
-                        orchestratorApiConfig,
-                        orchestratorPrompt,
-                        [],
-                        (delta) => {
-                            if (delta.content) {
-                                orchestratorResponse += delta.content;
-                                renderOrchestratorMessage(`发言统筹器: ${orchestratorResponse}`); // 实时显示
-                            }
-                        },
-                        () => {
-                            console.log('发言统筹器完成决策。');
-                        },
-                        (error) => {
-                            renderOrchestratorMessage(`发言统筹器错误: ${error.message}`);
-                            console.error('发言统筹器错误:', error);
-                            orchestratorResponse = '无';
-                        },
-                        signal // 传递 signal
-                    );
-                } catch (error) {
+// 3. 调用发言统筹器决定下一个发言者
+let orchestratorResponse = '';
+try {
+    await getAiResponse(
+        orchestratorApiConfig,
+        orchestratorPrompt,
+        [],
+        (delta) => {
+            if (delta.content) {
+                orchestratorResponse += delta.content;
+                addOutputTokens(estimateTokens(delta.content)); // 累加发言统筹器输出 tokens
+                updateTokenStats(); // 更新 UI
+                renderOrchestratorMessage(`发言统筹器: ${orchestratorResponse}`); // 实时显示
+            }
+        },
+        () => {
+            console.log('发言统筹器完成决策。');
+        },
+        (error) => { // 修复：移除多余的逗号，并确保这里是正确的参数
+            renderOrchestratorMessage(`发言统筹器错误: ${error.message}`);
+            console.error('发言统筹器错误:', error);
+            orchestratorResponse = '无';
+        },
+        signal // 传递 signal
+    );
+} catch (error) {
                     if (error.name === 'AbortError') {
                         console.log('发言统筹器请求已中止。');
                         renderOrchestratorMessage('发言统筹器请求已中止。');
@@ -509,6 +522,8 @@ ${agentsInGroup.map(agent => `<${agent.name}>${agent.prompt}</${agent.name}>`).j
 
         // 1. 立即更新UI
         addMessage({ author: state.currentUser.name, text });
+        addInputTokens(estimateTokens(text)); // 累加用户输入 tokens
+        updateTokenStats(); // 更新 UI
         renderMessages();
         messageInput.value = '';
         messageInput.focus();
