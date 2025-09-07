@@ -54,10 +54,12 @@ document.addEventListener('DOMContentLoaded', () => {
 - 你处在一个群聊中，与多名不同风格的用户互动。
 - 你的发言符合聊天软件网络聊天的风格，保持简短，除非刻意长篇大论否则极少超过二十个汉字
 
-如下是之前发生的群聊内容
-现在轮到你发言，请你做出回复。
+如下是之前发生的群聊内容：
+${messagesToSend.map(msg => `<${msg.author}>${msg.text}</${msg.author}>`).join('\n')}
+
+**现在轮到你发言，请你做出回复。**
 `,
-            messagesToSend, // 历史消息数组保持不变
+            [], // 历史消息数组现在通过 systemPrompt 传递格式化后的内容
             (delta) => {
                 if (delta.content) {
                     if (aiMessage === null) {
@@ -223,7 +225,12 @@ ${agentsInGroup.map(agent => `<${agent.name}>${agent.prompt}</${agent.name}>`).j
                     try {
                         const agentHistory = state.messages[state.currentTopicId] || [];
                         const agentMessagesToSend = agentHistory.slice(Math.max(0, agentHistory.length - chosenAgent.contextMessageCount)); // 使用智能体自己的上下文数量
-                        await processAgentResponse(chosenAgent, agentMessagesToSend, signal); // 传递 signal
+                        const agentResponse = await processAgentResponse(chosenAgent, agentMessagesToSend, signal); // 传递 signal 并获取响应
+                        if (!agentResponse.trim()) { // 检查 AI 响应是否为空
+                            renderOrchestratorMessage(`${chosenAgent.name} 返回空响应，链条终止。`);
+                            console.warn(`${chosenAgent.name} 返回空响应，链条终止。`);
+                            continueChat = false; // 空响应也中断链条
+                        }
                     } catch (agentError) {
                         if (agentError.name === 'AbortError') {
                             console.log(`${chosenAgent.name} 的发言请求已中止。`);
