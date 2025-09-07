@@ -2,7 +2,7 @@
 import { state, addModelService, updateModelService, deleteModelService, addAgent, updateAgent, deleteAgent, addGroup, updateGroup, deleteGroup, addTopic, updateTopic, deleteTopic, setCurrentGroup, setCurrentTopic, addMessage, updateTopicName, updateOrchestratorAgent } from './state.js';
 import { saveState } from './storage.js';
 import { getAiResponse } from './api.js';
-import { initUI, showGroupsPanel, showAgentsPanel, showModelServicesPanel, renderGroups, renderTopics, renderAgents, renderModelServices, renderMessages, openGroupModal, closeGroupModal, openTopicModal, closeTopicModal, openAgentModal, closeAgentModal, openServiceModelModal, closeServiceModelModal, updateChatAreaVisibility, renderOrchestratorMessage } from './ui.js';
+import { initUI, showGroupsPanel, showAgentsPanel, showModelServicesPanel, renderGroups, renderTopics, renderAgents, renderModelServices, renderMessages, openGroupModal, closeGroupModal, openTopicModal, closeTopicModal, openAgentModal, closeAgentModal, openServiceModelModal, closeServiceModelModal, updateChatAreaVisibility, renderOrchestratorMessage, showStopButton, hideStopButton } from './ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('应用已加载，主脚本开始执行。');
@@ -322,7 +322,6 @@ ${agentsInGroup.map(agent => `<${agent.name}>${agent.prompt}</${agent.name}>`).j
     document.querySelector('#group-modal .btn-cancel').addEventListener('click', closeGroupModal);
 
     // --- 话题管理事件 ---
-    // 话题现在嵌套在群组面板内，不再有独立的侧边栏入口
     document.getElementById('add-topic-btn').addEventListener('click', () => openTopicModal());
     document.querySelector('.topic-list').addEventListener('click', (e) => {
         const topicItem = e.target.closest('.topic-item');

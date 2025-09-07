@@ -12,8 +12,6 @@ const topicList = document.querySelector('.topic-list'); // 现在是 groups-pan
 const agentList = document.querySelector('.agent-list');
 const serviceList = document.querySelector('.service-list');
 
-const chatMessages = document.querySelector('.chat-messages');
-const chatInputArea = document.querySelector('.chat-input-area');
 
 // 模态框引用
 const agentModal = document.getElementById('agent-modal');
@@ -23,8 +21,13 @@ const topicModal = document.getElementById('topic-modal');
 
 
 // --- 初始化 ---
+let chatMessages;
+let chatInputArea;
+
 export function initUI() {
     console.log('UI 模块初始化...');
+    chatMessages = document.querySelector('.chat-messages');
+    chatInputArea = document.querySelector('.chat-input-area');
     showGroupsPanel(); // 默认显示群组列表
     renderGroups();
     renderTopics(); // 渲染当前群组下的话题
@@ -45,22 +48,22 @@ export function showAgentsPanel() {
     groupsPanel.classList.add('hidden');
     agentsPanel.classList.remove('hidden');
     modelServicesPanel.classList.add('hidden');
-    chatInputArea.classList.add('hidden'); // 智能体管理时隐藏聊天输入
+    document.querySelector('.chat-input-area').classList.add('hidden'); // 智能体管理时隐藏聊天输入
 }
 
 export function showModelServicesPanel() {
     groupsPanel.classList.add('hidden');
     agentsPanel.classList.add('hidden');
     modelServicesPanel.classList.remove('hidden');
-    chatInputArea.classList.add('hidden'); // 模型服务管理时隐藏聊天输入
+    document.querySelector('.chat-input-area').classList.add('hidden'); // 模型服务管理时隐藏聊天输入
 }
 
 // 根据当前是否有选中话题来控制聊天区域的可见性
 export function updateChatAreaVisibility() {
     if (state.currentTopicId) {
-        chatInputArea.classList.remove('hidden');
+        document.querySelector('.chat-input-area').classList.remove('hidden');
     } else {
-        chatInputArea.classList.add('hidden');
+        document.querySelector('.chat-input-area').classList.add('hidden');
     }
 }
 
@@ -147,6 +150,7 @@ export function renderModelServices() {
 }
 
 export function renderMessages() {
+    const chatMessages = document.querySelector('.chat-messages');
     chatMessages.innerHTML = '';
     const currentMessages = state.messages[state.currentTopicId] || [];
     
@@ -168,6 +172,7 @@ export function renderMessages() {
 // --- 模态框逻辑 ---
 
 export function renderOrchestratorMessage(message) {
+    const chatMessages = document.querySelector('.chat-messages');
     const orchestratorMessageEl = document.createElement('div');
     orchestratorMessageEl.className = 'orchestrator-message';
     orchestratorMessageEl.textContent = message;
