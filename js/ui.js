@@ -48,22 +48,22 @@ export function showAgentsPanel() {
     groupsPanel.classList.add('hidden');
     agentsPanel.classList.remove('hidden');
     modelServicesPanel.classList.add('hidden');
-    document.querySelector('.chat-input-area').classList.add('hidden'); // 智能体管理时隐藏聊天输入
+    chatInputArea.classList.add('hidden'); // 智能体管理时隐藏聊天输入
 }
 
 export function showModelServicesPanel() {
     groupsPanel.classList.add('hidden');
     agentsPanel.classList.add('hidden');
     modelServicesPanel.classList.remove('hidden');
-    document.querySelector('.chat-input-area').classList.add('hidden'); // 模型服务管理时隐藏聊天输入
+    chatInputArea.classList.add('hidden'); // 模型服务管理时隐藏聊天输入
 }
 
 // 根据当前是否有选中话题来控制聊天区域的可见性
 export function updateChatAreaVisibility() {
     if (state.currentTopicId) {
-        document.querySelector('.chat-input-area').classList.remove('hidden');
+        chatInputArea.classList.remove('hidden');
     } else {
-        document.querySelector('.chat-input-area').classList.add('hidden');
+        chatInputArea.classList.add('hidden');
     }
 }
 
@@ -150,7 +150,6 @@ export function renderModelServices() {
 }
 
 export function renderMessages() {
-    const chatMessages = document.querySelector('.chat-messages');
     chatMessages.innerHTML = '';
     const currentMessages = state.messages[state.currentTopicId] || [];
     
@@ -172,7 +171,6 @@ export function renderMessages() {
 // --- 模态框逻辑 ---
 
 export function renderOrchestratorMessage(message) {
-    const chatMessages = document.querySelector('.chat-messages');
     const orchestratorMessageEl = document.createElement('div');
     orchestratorMessageEl.className = 'orchestrator-message';
     orchestratorMessageEl.textContent = message;
