@@ -4,6 +4,7 @@
     padding: 0;
     box-sizing: border-box;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #f0f0f0; /* 统一字体颜色 */
 }
 
 body, html {
@@ -11,7 +12,6 @@ body, html {
     height: 100%;
     overflow: hidden;
     background-color: #1a1a1a;
-    color: #f0f0f0;
 }
 
 #app {
@@ -22,31 +22,18 @@ body, html {
 .sidebar {
     width: 60px;
     background-color: #1f1f1f;
-    padding: 10px;
+    padding: 10px 0; /* 调整内边距 */
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: flex-start; /* 图标从顶部开始排列 */
+    flex-shrink: 0; /* 防止侧边栏收缩 */
 }
 
-.panel {
-    width: 280px;
-    background-color: #252526;
-    display: flex;
-    flex-direction: column;
-}
-
-.chat-area {
-    flex-grow: 1;
-    background-color: #1e1e1e;
-    display: flex;
-    flex-direction: column;
-}
-
-/* Sidebar Icons */
 .sidebar-icon {
     font-size: 24px;
     cursor: pointer;
-    margin-bottom: 20px;
+    margin-bottom: 25px; /* 增加图标间距 */
     opacity: 0.7;
     transition: opacity 0.2s;
 }
@@ -54,42 +41,121 @@ body, html {
     opacity: 1;
 }
 
-/* Panel Header */
+.panel {
+    width: 280px; /* 固定面板宽度 */
+    background-color: #252526;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0; /* 防止面板收缩 */
+    position: relative; /* 用于绝对定位子面板 */
+}
+
+/* 确保所有面板子元素都占据整个面板区域 */
+#groups-panel,
+#topics-panel,
+#agents-panel,
+#model-services-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* 防止内容溢出 */
+}
+
 .panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 15px;
     border-bottom: 1px solid #333;
+    flex-shrink: 0; /* 防止头部收缩 */
 }
 .panel-header h2 {
     font-size: 16px;
 }
-.add-topic-btn {
+
+.add-btn {
     background: none;
     border: 1px solid #444;
     color: #f0f0f0;
-    width: 24px;
-    height: 24px;
+    width: 28px; /* 调整按钮大小 */
+    height: 28px;
     border-radius: 5px;
     cursor: pointer;
     font-size: 18px;
+    transition: background-color 0.2s;
+}
+.add-btn:hover {
+    background-color: #444;
 }
 
-/* Topic List */
-/* Settings Panel */
-.settings-content {
-    padding: 20px;
+/* 列表通用样式 */
+.group-list,
+.topic-list,
+.agent-list,
+.service-list {
+    list-style: none;
+    padding: 10px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+/* 列表项通用样式 */
+.group-item,
+.topic-item,
+.agent-item,
+.service-item {
+    display: flex;
+    justify-content: space-between; /* 内部元素左右对齐 */
+    align-items: center;
+    padding: 12px 15px;
+    border-radius: 8px;
+    margin-bottom: 5px;
+    cursor: pointer;
+    background-color: #333; /* 默认背景色 */
+    transition: background-color 0.2s;
+}
+
+.group-item:hover,
+.topic-item:hover,
+.agent-item:hover,
+.service-item:hover {
+    background-color: #4a4a4a;
+}
+
+.group-item.active,
+.topic-item.active,
+.agent-item.active {
+    background-color: #0e639c; /* 选中项的背景色 */
+    color: white;
+}
+
+.edit-btn, .delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    opacity: 0.6;
+    padding: 5px;
+    margin-left: 5px;
+    transition: opacity 0.2s;
+}
+
+.edit-btn:hover, .delete-btn:hover {
+    opacity: 1;
+}
+
+/* 聊天区域 */
+.chat-area {
+    flex-grow: 1;
+    background-color: #1e1e1e;
     display: flex;
     flex-direction: column;
-    height: 100%;
 }
 
-#save-settings-btn {
-    margin-top: auto; /* 将按钮推到底部 */
-}
-
-/* Chat Area */
 .chat-messages {
     flex-grow: 1;
     padding: 20px;
@@ -100,6 +166,7 @@ body, html {
     display: flex;
     padding: 10px;
     border-top: 1px solid #333;
+    flex-shrink: 0;
 }
 .chat-input-area textarea {
     flex-grow: 1;
@@ -107,7 +174,6 @@ body, html {
     border: 1px solid #444;
     border-radius: 5px;
     padding: 10px;
-    color: #f0f0f0;
     resize: none;
     height: 50px;
     font-size: 14px;
@@ -130,157 +196,7 @@ body, html {
     opacity: 0.6;
 }
 
-/* 通用样式 */
-.hidden {
-    display: none !important;
-}
-
-.add-btn {
-    background: none;
-    border: 1px solid #444;
-    color: #f0f0f0;
-    width: 24px;
-    height: 24px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 18px;
-}
-
-/* Agent List */
-.agent-list {
-    list-style: none;
-    padding: 10px;
-    overflow-y: auto;
-    flex-grow: 1;
-}
-
-.agent-item {
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.agent-item:hover {
-    background-color: #3a3a3a;
-}
-
-.agent-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.edit-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 16px;
-    opacity: 0.6;
-    padding: 5px;
-}
-
-.edit-btn:hover {
-    opacity: 1;
-}
-
-.agent-name {
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.agent-description {
-    font-size: 13px;
-    color: #b0b0b0;
-}
-
-/* Modal Styles */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-.modal-content {
-    background-color: #2d2d2d;
-    padding: 30px;
-    border-radius: 10px;
-    width: 90%;
-    max-width: 500px;
-}
-
-.modal-content h2 {
-    margin-bottom: 20px;
-}
-
-.form-group {
-    margin-bottom: 15px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-size: 14px;
-    color: #c0c0c0;
-}
-
-.form-group input,
-.form-group textarea {
-    width: 100%;
-    padding: 10px;
-    background-color: #252526;
-    border: 1px solid #444;
-    border-radius: 5px;
-    color: #f0f0f0;
-    font-size: 14px;
-}
-
-.form-actions {
-    margin-top: 20px;
-    display: flex;
-    justify-content: flex-end;
-}
-
-.btn-cancel, .btn-save {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.btn-cancel {
-    background-color: #444;
-    color: #f0f0f0;
-    margin-right: 10px;
-}
-
-.btn-save {
-    background-color: #0e639c;
-    color: white;
-}
-
-#agent-modal hr {
-    border: none;
-    border-top: 1px solid #444;
-    margin: 20px 0;
-}
-
-.form-hint {
-    font-size: 12px;
-    color: #999;
-    margin-bottom: 15px;
-}
-
-/* Message Styles */
+/* 消息样式 */
 .message {
     margin-bottom: 20px;
     display: flex;
@@ -300,6 +216,7 @@ body, html {
     border-radius: 8px;
     max-width: 70%;
     line-height: 1.5;
+    word-wrap: break-word; /* 确保长单词换行 */
 }
 
 .user-message {
@@ -310,34 +227,122 @@ body, html {
     background-color: #0e639c;
     color: white;
 }
-/* Service List Styles */
-.service-list {
-    list-style: none;
-    padding: 10px;
-    overflow-y: auto;
-    flex-grow: 1;
+
+/* 模态框通用样式 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
 }
 
-.service-item {
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 10px;
+.modal-content {
+    background-color: #2d2d2d;
+    padding: 30px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content h2 {
+    margin-bottom: 20px;
+    color: #f0f0f0;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #c0c0c0;
+}
+
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="number"],
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    background-color: #252526;
+    border: 1px solid #444;
+    border-radius: 5px;
+    color: #f0f0f0;
+    font-size: 14px;
+    line-height: 1.5; /* 确保文本输入行高一致 */
+}
+
+.form-group textarea {
+    resize: vertical; /* 允许垂直调整大小 */
+}
+
+.form-actions {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.btn-cancel, .btn-save {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
     cursor: pointer;
-    background-color: #333;
+    font-size: 14px;
     transition: background-color 0.2s;
 }
 
-.service-item:hover {
-    background-color: #4a4a4a;
+.btn-cancel {
+    background-color: #444;
+    color: #f0f0f0;
+    margin-right: 10px;
+}
+.btn-cancel:hover {
+    background-color: #555;
 }
 
-.service-name {
-    font-weight: bold;
-    margin-bottom: 5px;
+.btn-save {
+    background-color: #0e639c;
+    color: white;
+}
+.btn-save:hover {
+    background-color: #0b4f7a;
 }
 
-.service-model {
-    font-size: 13px;
-    color: #b0b0b0;
-    font-family: 'Courier New', Courier, monospace;
+/* 隐藏类 */
+.hidden {
+    display: none !important;
+}
+
+/* 额外样式：多选框组 */
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    max-height: 150px; /* 限制高度，可滚动 */
+    overflow-y: auto;
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 10px;
+    background-color: #252526;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+
+.checkbox-group input[type="checkbox"] {
+    margin-right: 8px;
+    width: auto; /* 恢复默认宽度 */
 }

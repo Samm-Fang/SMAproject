@@ -9,12 +9,36 @@
 <body>
     <div id="app">
         <aside class="sidebar">
-            <div class="sidebar-icon" title="聊天">💬</div>
+            <div class="sidebar-icon" title="群组">👥</div>
+            <div class="sidebar-icon" title="话题">💬</div>
             <div class="sidebar-icon" title="智能体">🤖</div>
             <div class="sidebar-icon" title="设置">⚙️</div>
         </aside>
         <section class="panel">
-            <div id="agents-panel">
+            <!-- 群组管理面板 -->
+            <div id="groups-panel" class="hidden">
+                 <div class="panel-header">
+                    <h2>群组</h2>
+                    <button id="add-group-btn" class="add-btn">+</button>
+                </div>
+                <ul class="group-list">
+                    <!-- 群组列表项将在这里 -->
+                </ul>
+            </div>
+
+            <!-- 话题管理面板 -->
+            <div id="topics-panel" class="hidden">
+                 <div class="panel-header">
+                    <h2>话题</h2>
+                    <button id="add-topic-btn" class="add-btn">+</button>
+                </div>
+                <ul class="topic-list">
+                    <!-- 话题列表项将在这里 -->
+                </ul>
+            </div>
+
+            <!-- 智能体管理面板 -->
+            <div id="agents-panel" class="hidden">
                  <div class="panel-header">
                     <h2>智能体</h2>
                     <button id="add-agent-btn" class="add-btn">+</button>
@@ -23,7 +47,9 @@
                     <!-- 智能体列表项将在这里 -->
                 </ul>
             </div>
-            <div id="settings-panel" class="hidden">
+
+            <!-- 模型服务管理面板 (原设置面板) -->
+            <div id="model-services-panel" class="hidden">
                 <div class="panel-header">
                    <h2>模型服务</h2>
                    <button id="add-service-btn" class="add-btn">+</button>
@@ -65,6 +91,20 @@
                     <label for="service-model-id">模型 ID</label>
                     <input type="text" id="service-model-id" required>
                 </div>
+                <hr>
+                <p class="form-hint">AI 模型参数</p>
+                <div class="form-group">
+                    <label for="service-temperature">温度 (Temperature)</label>
+                    <input type="number" id="service-temperature" min="0" max="2" step="0.01" value="0.7">
+                </div>
+                <div class="form-group">
+                    <label for="service-top-p">Top P</label>
+                    <input type="number" id="service-top-p" min="0" max="1" step="0.01" value="1.0">
+                </div>
+                <div class="form-group">
+                    <label for="service-context-count">上下文消息段数</label>
+                    <input type="number" id="service-context-count" min="1" value="10">
+                </div>
                 <div class="form-actions">
                     <button type="button" class="btn-cancel">取消</button>
                     <button type="submit" class="btn-save">保存</button>
@@ -84,7 +124,7 @@
                 </div>
                 <div class="form-group">
                     <label for="agent-description">描述</label>
-                    <input type="text" id="agent-description" required>
+                    <input type="text" id="agent-description">
                 </div>
                  <div class="form-group">
                     <label for="agent-prompt">提示词 (Prompt)</label>
@@ -94,6 +134,52 @@
                     <label for="agent-model-service">使用的模型服务</label>
                     <select id="agent-model-service" required>
                         <!-- 选项将由 JS 动态填充 -->
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel">取消</button>
+                    <button type="submit" class="btn-save">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 添加/编辑群组模态框 -->
+    <div id="group-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>创建新群组</h2>
+            <form id="group-form">
+                <div class="form-group">
+                    <label for="group-name">群组名称</label>
+                    <input type="text" id="group-name" required>
+                </div>
+                <div class="form-group">
+                    <label>选择智能体 (可多选)</label>
+                    <div id="group-agents-selector" class="checkbox-group">
+                        <!-- 智能体列表将由 JS 动态填充 -->
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel">取消</button>
+                    <button type="submit" class="btn-save">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 添加/编辑话题模态框 -->
+    <div id="topic-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>创建新话题</h2>
+            <form id="topic-form">
+                <div class="form-group">
+                    <label for="topic-name">话题名称</label>
+                    <input type="text" id="topic-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="topic-group">所属群组</label>
+                    <select id="topic-group-selector" title="选择所属群组" required>
+                        <!-- 群组列表将由 JS 动态填充 -->
                     </select>
                 </div>
                 <div class="form-actions">

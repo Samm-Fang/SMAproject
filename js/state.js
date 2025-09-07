@@ -2,17 +2,20 @@
 import { loadState } from './storage.js';
 
 const initialState = {
-    // 模型服务 (能力)
+    // 模型服务 (能力提供方)
     modelServices: [
         {
             id: 1,
             name: 'OpenAI (Default)',
             apiUrl: 'https://api.openai.com/v1/chat/completions',
-            apiKey: '', // 提示用户在此填入
-            modelId: 'gpt-3.5-turbo'
+            apiKey: '', // 用户在此填入
+            modelId: 'gpt-3.5-turbo',
+            temperature: 0.7,
+            topP: 1.0,
+            contextMessageCount: 10 // 默认发送最近10条消息作为上下文
         }
     ],
-    // 智能体 (身份)
+    // 智能体 (身份定义)
     agents: [
         { 
             id: 1, 
@@ -21,15 +24,47 @@ const initialState = {
             modelServiceId: 1 // 关联到 ID 为 1 的模型服务
         }
     ],
-    // 聊天记录 (key 是 agent.id)
+    // 群组 (智能体集合)
+    groups: [
+        {
+            id: 1,
+            name: '默认群组',
+            agentIds: [1] // 包含默认助手
+        }
+    ],
+    // 话题 (聊天会话)
+    topics: [
+        {
+            id: 1,
+            name: '默认话题',
+            groupId: 1 // 关联到默认群组
+        }
+    ],
+    // 聊天记录 (key 是 topic.id)
     messages: {
         1: [{ id: 1, author: 'Samm', text: '你好' }]
     },
-    currentAgentId: 1,
+    // 当前选中状态
+    currentGroupId: 1,
+    currentTopicId: 1, // 默认选中默认话题
     currentUser: { name: 'Samm' }
 };
 
-export let state = loadState() || initialState;
+// 确保加载的状态完整性
+let loadedState = loadState();
+if (loadedState) {
+    // 检查并初始化可能缺失的数组
+    loadedState.modelServices = loadedState.modelServices || [];
+    loadedState.agents = loadedState.agents || [];
+    loadedState.groups = loadedState.groups || [];
+    loadedState.topics = loadedState.topics || [];
+    loadedState.messages = loadedState.messages || {};
+    // 确保 currentGroupId 和 currentTopicId 存在，或回退到默认
+    loadedState.currentGroupId = loadedState.currentGroupId || initialState.currentGroupId;
+    loadedState.currentTopicId = loadedState.currentTopicId || initialState.currentTopicId;
+}
+export let state = loadedState || initialState;
+
 
 // --- 状态修改函数 ---
 
@@ -37,10 +72,7 @@ export function resetState() {
     state = initialState;
 }
 
-export function setCurrentAgent(agentId) {
-    state.currentAgentId = agentId;
-}
-
+// --- ModelServices CRUD ---
 export function addModelService(serviceData) {
     const newService = { id: Date.now(), ...serviceData };
     state.modelServices.push(newService);
@@ -51,26 +83,94 @@ export function updateModelService(serviceId, serviceData) {
     if (service) { Object.assign(service, serviceData); }
 }
 
+export function deleteModelService(serviceId) {
+    state.modelServices = state.modelServices.filter(s => s.id !== serviceId);
+    // TODO: 检查是否有智能体关联到此服务，并处理
+}
+
+// --- Agents CRUD ---
 export function addAgent(agentData) {
     const newAgent = { id: Date.now(), ...agentData };
     state.agents.push(newAgent);
-    if (!state.messages[newAgent.id]) {
-        state.messages[newAgent.id] = [];
-    }
 }
 
 export function updateAgent(agentId, agentData) {
     const agent = state.agents.find(a => a.id === agentId);
-    if (agent) {
-        Object.assign(agent, agentData);
+    if (agent) { Object.assign(agent, agentData); }
+}
+
+export function deleteAgent(agentId) {
+    state.agents = state.agents.filter(a => a.id !== agentId);
+    // TODO: 检查是否有群组关联到此智能体，并处理
+}
+
+// --- Groups CRUD ---
+export function addGroup(groupData) {
+    // 确保 groups 数组存在
+    if (!state.groups) { state.groups = []; }
+    const newGroup = { id: Date.now(), ...groupData };
+    state.groups.push(newGroup);
+}
+
+export function updateGroup(groupId, groupData) {
+    const group = state.groups.find(g => g.id === groupId);
+    if (group) { Object.assign(group, groupData); }
+}
+
+export function deleteGroup(groupId) {
+    state.groups = state.groups.filter(g => g.id !== groupId);
+    // TODO: 检查是否有话题关联到此群组，并处理
+}
+
+// --- Topics CRUD ---
+export function addTopic(topicData) {
+    // 确保 topics 数组存在
+    if (!state.topics) { state.topics = []; }
+    const newTopic = { id: Date.now(), ...topicData };
+    state.topics.push(newTopic);
+    // 为新话题创建空的聊天记录
+    if (!state.messages[newTopic.id]) {
+        state.messages[newTopic.id] = [];
     }
 }
 
+export function updateTopic(topicId, topicData) {
+    const topic = state.topics.find(t => t.id === topicId);
+    if (topic) { Object.assign(topic, topicData); }
+}
+
+export function deleteTopic(topicId) {
+    state.topics = state.topics.filter(t => t.id !== topicId);
+    delete state.messages[topicId]; // 删除相关聊天记录
+}
+
+// --- Current Selection ---
+export function setCurrentGroup(groupId) {
+    state.currentGroupId = groupId;
+    // 当群组改变时，默认选中该群组的第一个话题
+    const topicsInGroup = state.topics.filter(t => t.groupId === groupId);
+    if (topicsInGroup.length > 0) {
+        state.currentTopicId = topicsInGroup[0].id;
+    } else {
+        state.currentTopicId = null;
+    }
+}
+
+export function setCurrentTopic(topicId) {
+    state.currentTopicId = topicId;
+    // 确保 currentGroupId 与当前话题所属群组一致
+    const topic = state.topics.find(t => t.id === topicId);
+    if (topic && topic.groupId !== state.currentGroupId) {
+        state.currentGroupId = topic.groupId;
+    }
+}
+
+// --- Message Management ---
 export function addMessage(messageData) {
-    if (!state.messages[state.currentAgentId]) {
-        state.messages[state.currentAgentId] = [];
+    if (!state.messages[state.currentTopicId]) {
+        state.messages[state.currentTopicId] = [];
     }
     const newMessage = { id: Date.now(), ...messageData };
-    state.messages[state.currentAgentId].push(newMessage);
+    state.messages[state.currentTopicId].push(newMessage);
     return newMessage;
 }

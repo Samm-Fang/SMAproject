@@ -2,32 +2,36 @@
 
 /**
  * 获取 AI 的流式响应
- * @param {object} apiConfig - { url, apiKey, modelId }
+ * @param {object} apiConfig - { url, apiKey, modelId, temperature, topP }
  * @param {string} systemPrompt - 系统提示词
- * @param {Array<object>} history - 历史消息数组
+ * @param {Array<object>} history - 历史消息数组 (已根据 contextMessageCount 截断)
  * @param {function} onStream - 处理数据流的回调函数
  * @param {function} onComplete - 完成时的回调
  * @param {function} onError - 错误处理回调
  */
 export async function getAiResponse(apiConfig, systemPrompt, history, onStream, onComplete, onError) {
     try {
+        const payload = {
+            model: apiConfig.modelId,
+            messages: [
+                { role: 'system', content: systemPrompt },
+                ...history.map(msg => ({
+                    role: msg.author === 'Samm' ? 'user' : 'assistant',
+                    content: msg.text
+                }))
+            ],
+            stream: true,
+            temperature: apiConfig.temperature,
+            top_p: apiConfig.topP
+        };
+
         const response = await fetch(apiConfig.url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiConfig.apiKey}`
             },
-            body: JSON.stringify({
-                model: apiConfig.modelId,
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    ...history.map(msg => ({
-                        role: msg.author === 'Samm' ? 'user' : 'assistant',
-                        content: msg.text
-                    }))
-                ],
-                stream: true,
-            }),
+            body: JSON.stringify(payload),
         });
 
         if (!response.ok) {

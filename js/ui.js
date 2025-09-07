@@ -2,55 +2,156 @@
 import { state } from './state.js';
 
 // --- DOM 元素引用 ---
+const groupsPanel = document.getElementById('groups-panel');
+const topicsPanel = document.getElementById('topics-panel');
 const agentsPanel = document.getElementById('agents-panel');
-const settingsPanel = document.getElementById('settings-panel');
+const modelServicesPanel = document.getElementById('model-services-panel'); // 原 settingsPanel
+
+const groupList = document.querySelector('.group-list');
+const topicList = document.querySelector('.topic-list');
 const agentList = document.querySelector('.agent-list');
 const serviceList = document.querySelector('.service-list');
+
+const chatMessages = document.querySelector('.chat-messages');
+const chatInputArea = document.querySelector('.chat-input-area'); // 聊天输入区域
+
 const agentModal = document.getElementById('agent-modal');
 const serviceModal = document.getElementById('service-modal');
-const chatMessages = document.querySelector('.chat-messages');
+const groupModal = document.getElementById('group-modal');
+const topicModal = document.getElementById('topic-modal');
+
 
 // --- 初始化 ---
 export function initUI() {
     console.log('UI 模块初始化...');
-    showAgentsPanel(); // 默认显示智能体列表
+    showGroupsPanel(); // 默认显示群组列表
+    renderGroups();
+    renderTopics(); // 渲染当前群组下的话题
     renderAgents();
-    renderMessages();
     renderModelServices();
+    renderMessages(); // 渲染当前话题的消息
 }
 
 // --- 视图切换 ---
-export function showAgentsPanel() {
-    agentsPanel.classList.remove('hidden');
-    settingsPanel.classList.add('hidden');
+export function showGroupsPanel() {
+    groupsPanel.classList.remove('hidden');
+    topicsPanel.classList.add('hidden');
+    agentsPanel.classList.add('hidden');
+    modelServicesPanel.classList.add('hidden');
+    chatInputArea.classList.add('hidden'); // 群组管理时不显示聊天输入
 }
 
-export function showSettingsPanel() {
-    settingsPanel.classList.remove('hidden');
+export function showTopicsPanel() {
+    groupsPanel.classList.add('hidden');
+    topicsPanel.classList.remove('hidden');
     agentsPanel.classList.add('hidden');
+    modelServicesPanel.classList.add('hidden');
+    chatInputArea.classList.remove('hidden'); // 话题列表显示时显示聊天输入
 }
+
+export function showAgentsPanel() {
+    groupsPanel.classList.add('hidden');
+    topicsPanel.classList.add('hidden');
+    agentsPanel.classList.remove('hidden');
+    modelServicesPanel.classList.add('hidden');
+    chatInputArea.classList.add('hidden'); // 智能体管理时不显示聊天输入
+}
+
+export function showModelServicesPanel() {
+    groupsPanel.classList.add('hidden');
+    topicsPanel.classList.add('hidden');
+    agentsPanel.classList.add('hidden');
+    modelServicesPanel.classList.remove('hidden');
+    chatInputArea.classList.add('hidden'); // 模型服务管理时不显示聊天输入
+}
+
 
 // --- 渲染函数 ---
+
+export function renderGroups() {
+    groupList.innerHTML = '';
+    // 添加防御性检查，确保 state.groups 存在且是数组
+    (state.groups || []).forEach(group => {
+        const li = document.createElement('li');
+        li.className = 'group-item';
+        li.dataset.id = group.id;
+        if (group.id === state.currentGroupId) {
+            li.classList.add('active');
+        }
+        li.innerHTML = `
+            <div class="group-name">${group.name}</div>
+            <div class="actions">
+                <button class="edit-btn" title="编辑群组">✏️</button>
+                <button class="delete-btn" title="删除群组">🗑️</button>
+            </div>
+        `;
+        groupList.appendChild(li);
+    });
+}
+
+export function renderTopics() {
+    topicList.innerHTML = '';
+    // 仅渲染当前群组下的话题
+    const currentGroupTopics = (state.topics || []).filter(t => t.groupId === state.currentGroupId);
+    currentGroupTopics.forEach(topic => {
+        const li = document.createElement('li');
+        li.className = 'topic-item';
+        li.dataset.id = topic.id;
+        if (topic.id === state.currentTopicId) {
+            li.classList.add('active');
+        }
+        li.innerHTML = `
+            <div class="topic-name">${topic.name}</div>
+            <div class="actions">
+                <button class="edit-btn" title="编辑话题">✏️</button>
+                <button class="delete-btn" title="删除话题">🗑️</button>
+            </div>
+        `;
+        topicList.appendChild(li);
+    });
+}
+
 export function renderAgents() {
-    agentList.innerHTML = ''; // 清空
-    state.agents.forEach(agent => {
+    agentList.innerHTML = '';
+    (state.agents || []).forEach(agent => {
         const li = document.createElement('li');
         li.className = 'agent-item';
         li.dataset.id = agent.id;
-        if (agent.id === state.currentAgentId) {
+        if (agent.id === state.currentAgentId) { // 智能体列表的 active 状态可能需要调整
             li.classList.add('active');
         }
         li.innerHTML = `
             <div class="agent-name">${agent.name}</div>
-            <button class="edit-btn">✏️</button>
+            <div class="actions">
+                <button class="edit-btn" title="编辑智能体">✏️</button>
+                <button class="delete-btn" title="删除智能体">🗑️</button>
+            </div>
         `;
         agentList.appendChild(li);
     });
 }
 
+export function renderModelServices() {
+    serviceList.innerHTML = '';
+    (state.modelServices || []).forEach(service => {
+        const li = document.createElement('li');
+        li.className = 'service-item';
+        li.dataset.id = service.id;
+        li.innerHTML = `
+            <div class="service-name">${service.name}</div>
+            <div class="service-model">${service.modelId}</div>
+            <div class="actions">
+                <button class="edit-btn" title="编辑服务">✏️</button>
+                <button class="delete-btn" title="删除服务">🗑️</button>
+            </div>
+        `;
+        serviceList.appendChild(li);
+    });
+}
+
 export function renderMessages() {
-    chatMessages.innerHTML = ''; // 清空
-    const currentMessages = state.messages[state.currentAgentId] || [];
+    chatMessages.innerHTML = '';
+    const currentMessages = state.messages[state.currentTopicId] || [];
     
     currentMessages.forEach(message => {
         const messageEl = document.createElement('div');
@@ -67,22 +168,38 @@ export function renderMessages() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-export function renderModelServices() {
-    serviceList.innerHTML = '';
-    state.modelServices.forEach(service => {
-        const li = document.createElement('li');
-        li.className = 'service-item';
-        li.dataset.id = service.id;
-        li.innerHTML = `
-            <div class="service-name">${service.name}</div>
-            <div class="service-model">${service.modelId}</div>
+// --- 模态框逻辑 ---
+
+// 辅助函数：填充智能体多选框
+function populateAgentCheckboxes(selectedAgentIds = []) {
+    const container = document.getElementById('group-agents-selector');
+    container.innerHTML = '';
+    state.agents.forEach(agent => {
+        const label = document.createElement('label');
+        label.innerHTML = `
+            <input type="checkbox" value="${agent.id}" ${selectedAgentIds.includes(agent.id) ? 'checked' : ''}>
+            ${agent.name}
         `;
-        serviceList.appendChild(li);
+        container.appendChild(label);
     });
 }
 
-// --- 模态框逻辑 ---
+// 辅助函数：填充群组选择器
+function populateGroupSelector(selectedGroupId = null) {
+    const selector = document.getElementById('topic-group-selector');
+    selector.innerHTML = '';
+    state.groups.forEach(group => {
+        const option = document.createElement('option');
+        option.value = group.id;
+        option.textContent = group.name;
+        if (group.id === selectedGroupId) {
+            option.selected = true;
+        }
+        selector.appendChild(option);
+    });
+}
 
+// 辅助函数：填充模型服务选择器
 function populateServiceSelector(selectedServiceId = null) {
     const selector = document.getElementById('agent-model-service');
     selector.innerHTML = ''; // 清空旧选项
@@ -97,11 +214,54 @@ function populateServiceSelector(selectedServiceId = null) {
     });
 }
 
+// --- 打开/关闭模态框 ---
+
+export function openGroupModal(group = null) {
+    const form = document.getElementById('group-form');
+    const title = groupModal.querySelector('h2');
+    if (group) {
+        title.textContent = '编辑群组';
+        form.dataset.editingId = group.id;
+        document.getElementById('group-name').value = group.name;
+        populateAgentCheckboxes(group.agentIds);
+    } else {
+        title.textContent = '创建新群组';
+        delete form.dataset.editingId;
+        form.reset();
+        populateAgentCheckboxes();
+    }
+    groupModal.classList.remove('hidden');
+}
+
+export function closeGroupModal() {
+    groupModal.classList.add('hidden');
+}
+
+export function openTopicModal(topic = null) {
+    const form = document.getElementById('topic-form');
+    const title = topicModal.querySelector('h2');
+    if (topic) {
+        title.textContent = '编辑话题';
+        form.dataset.editingId = topic.id;
+        document.getElementById('topic-name').value = topic.name;
+        populateGroupSelector(topic.groupId);
+    } else {
+        title.textContent = '创建新话题';
+        delete form.dataset.editingId;
+        form.reset();
+        populateGroupSelector(state.currentGroupId); // 默认选中当前群组
+    }
+    topicModal.classList.remove('hidden');
+}
+
+export function closeTopicModal() {
+    topicModal.classList.add('hidden');
+}
+
 export function openAgentModal(agent = null) {
     const form = document.getElementById('agent-form');
-    const title = agentModal.querySelector('h2'); // 从 modal 根元素查找 h2
+    const title = agentModal.querySelector('h2');
     if (agent) {
-        // 编辑模式
         title.textContent = '编辑智能体';
         form.dataset.editingId = agent.id;
         document.getElementById('agent-name').value = agent.name;
@@ -109,11 +269,10 @@ export function openAgentModal(agent = null) {
         document.getElementById('agent-prompt').value = agent.prompt;
         populateServiceSelector(agent.modelServiceId);
     } else {
-        // 创建模式
         title.textContent = '创建新智能体';
         delete form.dataset.editingId;
         form.reset();
-        populateServiceSelector();
+        populateServiceSelector(state.modelServices[0]?.id); // 默认选中第一个服务
     }
     agentModal.classList.remove('hidden');
 }
@@ -124,20 +283,25 @@ export function closeAgentModal() {
 
 export function openServiceModelModal(service = null) {
     const form = document.getElementById('service-form');
-    const title = serviceModal.querySelector('h2'); // 从 modal 根元素查找 h2
+    const title = serviceModal.querySelector('h2');
     if (service) {
-        // 编辑模式
         title.textContent = '编辑模型服务';
         form.dataset.editingId = service.id;
         document.getElementById('service-name').value = service.name;
         document.getElementById('service-api-url').value = service.apiUrl;
         document.getElementById('service-api-key').value = service.apiKey;
         document.getElementById('service-model-id').value = service.modelId;
+        document.getElementById('service-temperature').value = service.temperature;
+        document.getElementById('service-top-p').value = service.topP;
+        document.getElementById('service-context-count').value = service.contextMessageCount;
     } else {
-        // 创建模式
         title.textContent = '创建新模型服务';
         delete form.dataset.editingId;
         form.reset();
+        // 设置默认值
+        document.getElementById('service-temperature').value = 0.7;
+        document.getElementById('service-top-p').value = 1.0;
+        document.getElementById('service-context-count').value = 10;
     }
     serviceModal.classList.remove('hidden');
 }
